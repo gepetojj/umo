@@ -140,7 +140,6 @@ export function MeetingContextCard({
 				</p>
 			</div>
 
-			{/* Gravação: elemento secundário mas em alta hierarquia */}
 			{audioUrl && (
 				<div className="w-full max-w-full overflow-hidden pb-2">
 					<audio
@@ -154,8 +153,6 @@ export function MeetingContextCard({
 					</audio>
 				</div>
 			)}
-
-			{/* Status: flex-col, cada linha flex-row justify-between, background pastel por status */}
 			<ol
 				className={cn(
 					"flex list-none flex-col gap-1 p-0",
