@@ -1,6 +1,5 @@
 "use client";
 
-import { PlayIcon } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -22,6 +21,7 @@ import {
 	PromptInputSubmit,
 	PromptInputTextarea,
 } from "@/components/ai-elements/prompt-input";
+import { MeetingContextCard } from "@/components/meeting-context-card";
 import { Button } from "@/components/ui/button";
 import type { MeetingRecord } from "@/lib/db";
 import { getMeeting, getRecordingBlob } from "@/lib/db";
@@ -32,8 +32,10 @@ export default function MeetingChatPage() {
 	const [meeting, setMeeting] = useState<MeetingRecord | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [audioUrl, setAudioUrl] = useState<string | null>(null);
+	const [recordingFailed, setRecordingFailed] = useState(false);
 	const [input, setInput] = useState("");
 
+	// Carrega reunião
 	useEffect(() => {
 		if (!id) {
 			setLoading(false);
@@ -51,24 +53,34 @@ export default function MeetingChatPage() {
 		};
 	}, [id]);
 
+	// Carrega blob do áudio; marca falha se não houver gravação ou der erro
+	useEffect(() => {
+		if (!id || !meeting) return;
+		let cancelled = false;
+		setRecordingFailed(false);
+		getRecordingBlob(id)
+			.then((blob) => {
+				if (cancelled) return;
+				if (blob) {
+					setAudioUrl(URL.createObjectURL(blob));
+				} else {
+					setRecordingFailed(true);
+				}
+			})
+			.catch(() => {
+				if (!cancelled) setRecordingFailed(true);
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, [id, meeting]);
+
+	// Revoga object URL ao desmontar
 	useEffect(() => {
 		return () => {
 			if (audioUrl) URL.revokeObjectURL(audioUrl);
 		};
 	}, [audioUrl]);
-
-	const handlePlayRecording = useCallback(async () => {
-		if (!id) return;
-		if (audioUrl) {
-			URL.revokeObjectURL(audioUrl);
-			setAudioUrl(null);
-			return;
-		}
-		const blob = await getRecordingBlob(id);
-		if (blob) {
-			setAudioUrl(URL.createObjectURL(blob));
-		}
-	}, [id, audioUrl]);
 
 	const handleSubmit = useCallback(
 		(
@@ -119,79 +131,93 @@ export default function MeetingChatPage() {
 		},
 	];
 
+	const hasRealMessages = displayMessages.length > 1;
+
 	return (
 		<div className="flex min-h-0 flex-1 flex-col">
 			<Conversation className="flex-1">
-				<ConversationContent>
-					{id && audioUrl && (
-						<div className="flex justify-center py-4">
-							<audio
-								controls
-								src={audioUrl}
-								className="w-full max-w-md"
-								preload="metadata"
-								aria-label="Reproduzir gravação da reunião"
-							>
-								<track kind="captions" />
-							</audio>
+				<ConversationContent className="flex flex-col gap-8">
+					{/* Bloco de contexto: centralizado sem outras mensagens, no topo e resumido com mensagens */}
+					{hasRealMessages ? (
+						<div className="shrink-0">
+							<MeetingContextCard
+								meeting={meeting}
+								audioUrl={audioUrl}
+								recordingFailed={recordingFailed}
+								compact
+							/>
+						</div>
+					) : (
+						<div className="flex min-h-0 flex-1 flex-col items-center justify-center py-8">
+							<MeetingContextCard
+								meeting={meeting}
+								audioUrl={audioUrl}
+								recordingFailed={recordingFailed}
+								compact={false}
+								className="w-full max-w-lg"
+							/>
 						</div>
 					)}
-					{displayMessages.map((message) => (
-						<Message from={message.role} key={message.id}>
-							<MessageContent>
-								{message.parts.map((part, i) => {
-									if (part.type === "text") {
-										return (
-											<MessageResponse
-												key={`${message.id}-${i}`}
-											>
-												{part.text}
-											</MessageResponse>
-										);
-									}
-									return null;
-								})}
-							</MessageContent>
-						</Message>
-					))}
+
+					{/* Mensagens do chat (só exibe quando há mensagens além do placeholder) */}
+					{hasRealMessages &&
+						displayMessages.map((message) => (
+							<Message from={message.role} key={message.id}>
+								<MessageContent>
+									{message.parts.map((part, i) => {
+										if (part.type === "text") {
+											return (
+												<MessageResponse
+													key={`${message.id}-${i}`}
+												>
+													{part.text}
+												</MessageResponse>
+											);
+										}
+										return null;
+									})}
+								</MessageContent>
+							</Message>
+						))}
 				</ConversationContent>
 				<ConversationScrollButton />
 			</Conversation>
 
 			<div className="border-t p-4">
-				{id && (
-					<div className="mb-3 flex justify-center">
-						<Button
-							variant="outline"
-							size="sm"
-							onClick={handlePlayRecording}
-							className="min-h-[44px]"
-						>
-							<PlayIcon className="mr-2 size-4" />
-							{audioUrl ? "Ocultar player" : "Ouvir gravação"}
-						</Button>
+				{recordingFailed ? (
+					<div
+						className="mx-auto max-w-3xl rounded-lg border border-muted-foreground/25 border-dashed bg-muted/30 px-4 py-4 text-center"
+						aria-live="polite"
+					>
+						<p className="text-muted-foreground text-sm">
+							Este chat está desativado devido a uma falha com a
+							gravação.
+						</p>
 					</div>
+				) : (
+					<PromptInput
+						onSubmit={handleSubmit}
+						className="mx-auto max-w-3xl"
+					>
+						<PromptInputBody>
+							<PromptInputTextarea
+								value={input}
+								onChange={(e) =>
+									setInput(e.currentTarget.value)
+								}
+								placeholder="Em breve você poderá fazer perguntas sobre a reunião…"
+								className="min-h-[44px]"
+							/>
+						</PromptInputBody>
+						<PromptInputFooter>
+							<PromptInputSubmit
+								disabled
+								status="ready"
+								title="Chat com a reunião em breve"
+							/>
+						</PromptInputFooter>
+					</PromptInput>
 				)}
-				<PromptInput
-					onSubmit={handleSubmit}
-					className="mx-auto max-w-3xl"
-				>
-					<PromptInputBody>
-						<PromptInputTextarea
-							value={input}
-							onChange={(e) => setInput(e.currentTarget.value)}
-							placeholder="Em breve você poderá fazer perguntas sobre a reunião…"
-							className="min-h-[44px]"
-						/>
-					</PromptInputBody>
-					<PromptInputFooter>
-						<PromptInputSubmit
-							disabled
-							status="ready"
-							title="Chat com a reunião em breve"
-						/>
-					</PromptInputFooter>
-				</PromptInput>
 			</div>
 		</div>
 	);
