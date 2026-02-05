@@ -2,12 +2,9 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import type { MeetingRecord } from "@/lib/db";
-import {
-	addMeeting as dbAddMeeting,
-	updateMeetingTitle as dbUpdateMeetingTitle,
-	getMeetings,
-} from "@/lib/db";
+import { createMeeting } from "@/server/actions/meetings/create-meeting";
+import { getMeetings } from "@/server/actions/meetings/get-meetings";
+import { updateMeetingTitle } from "@/server/actions/meetings/update-meeting-title";
 
 export const meetingsQueryKey = ["meetings"] as const;
 
@@ -23,17 +20,14 @@ export function useMeetings() {
 		queryFn: getMeetings,
 	});
 
-	const addMeeting = async (
-		meeting: Omit<MeetingRecord, "durationSeconds"> & {
-			durationSeconds?: number;
-		},
-	) => {
-		await dbAddMeeting(meeting);
+	const addMeeting = async (title: string) => {
+		const { id } = await createMeeting(title);
 		await queryClient.invalidateQueries({ queryKey: meetingsQueryKey });
+		return id;
 	};
 
-	const updateMeetingTitle = async (id: string, title: string) => {
-		await dbUpdateMeetingTitle(id, title);
+	const updateTitle = async (meetingId: string, title: string) => {
+		await updateMeetingTitle(meetingId, title);
 		await queryClient.invalidateQueries({ queryKey: meetingsQueryKey });
 	};
 
@@ -42,6 +36,6 @@ export function useMeetings() {
 		loading,
 		refresh,
 		addMeeting,
-		updateMeetingTitle,
+		updateTitle,
 	};
 }

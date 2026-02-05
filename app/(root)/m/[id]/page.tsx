@@ -23,13 +23,15 @@ import {
 } from "@/components/ai-elements/prompt-input";
 import { MeetingContextCard } from "@/components/meeting-context-card";
 import { Button } from "@/components/ui/button";
-import type { MeetingRecord } from "@/lib/db";
-import { getMeeting, getRecordingBlob } from "@/lib/db";
+import { getRecordingBlob } from "@/lib/db";
+import { getMeeting } from "@/server/actions/meetings/get-meeting";
 
 export default function MeetingChatPage() {
 	const params = useParams();
 	const id = typeof params.id === "string" ? params.id : null;
-	const [meeting, setMeeting] = useState<MeetingRecord | null>(null);
+	const [meeting, setMeeting] = useState<Awaited<
+		ReturnType<typeof getMeeting>
+	> | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [audioUrl, setAudioUrl] = useState<string | null>(null);
 	const [recordingFailed, setRecordingFailed] = useState(false);
@@ -53,11 +55,19 @@ export default function MeetingChatPage() {
 		};
 	}, [id]);
 
-	// Carrega blob do áudio; marca falha se não houver gravação ou der erro
+	// Carrega áudio: URL do S3 se já registrou upload, senão blob temporário do IDB
 	useEffect(() => {
 		if (!id || !meeting) return;
 		let cancelled = false;
 		setRecordingFailed(false);
+
+		if (meeting.recordingKey) {
+			const base = process.env.NEXT_PUBLIC_S3_PUBLIC_URL ?? "";
+			setAudioUrl(base ? `${base}/${meeting.recordingKey}` : null);
+			if (!base) setRecordingFailed(true);
+			return;
+		}
+
 		getRecordingBlob(id)
 			.then((blob) => {
 				if (cancelled) return;
@@ -75,10 +85,10 @@ export default function MeetingChatPage() {
 		};
 	}, [id, meeting]);
 
-	// Revoga object URL ao desmontar
+	// Revoga object URL ao desmontar (apenas blob URLs do IDB)
 	useEffect(() => {
 		return () => {
-			if (audioUrl) URL.revokeObjectURL(audioUrl);
+			if (audioUrl?.startsWith("blob:")) URL.revokeObjectURL(audioUrl);
 		};
 	}, [audioUrl]);
 

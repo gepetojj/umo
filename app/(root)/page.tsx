@@ -1,8 +1,6 @@
 "use client";
 
-import { useQueryClient } from "@tanstack/react-query";
 import { MicIcon, SquareIcon } from "lucide-react";
-import { nanoid } from "nanoid";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 
@@ -13,7 +11,11 @@ import {
 } from "@/components/ai-elements/conversation";
 import { Button } from "@/components/ui/button";
 import { useRecorder } from "@/hooks/use-recorder";
-import { meetingsQueryKey, useMeetings } from "@/lib/use-meetings";
+import { clearChunksForMeeting, getRecordingBlob } from "@/lib/db";
+import { useMeetings } from "@/lib/use-meetings";
+import { updateMeetingDuration } from "@/server/actions/meetings/update-meeting-duration";
+import { getUploadUrl } from "@/server/actions/objects/get-upload-url";
+import { registerUpload } from "@/server/actions/objects/register-upload";
 
 function formatDuration(seconds: number) {
 	const m = Math.floor(seconds / 60);
@@ -23,7 +25,6 @@ function formatDuration(seconds: number) {
 
 export default function NewMeetingPage() {
 	const router = useRouter();
-	const queryClient = useQueryClient();
 	const { addMeeting } = useMeetings();
 	const { start, stop, isRecording, durationSeconds, error } = useRecorder();
 	const [starting, setStarting] = useState(false);
@@ -33,27 +34,51 @@ export default function NewMeetingPage() {
 
 	const handleStartRecording = useCallback(async () => {
 		setStarting(true);
-		const meetingId = nanoid();
+		const meetingId = await addMeeting("Reunião sem título");
 		setCurrentMeetingId(meetingId);
 		await start(meetingId);
-		await queryClient.invalidateQueries({ queryKey: meetingsQueryKey });
 		setStarting(false);
-	}, [start, queryClient]);
+	}, [start, addMeeting]);
 
 	const handleStopRecording = useCallback(async () => {
 		const id = currentMeetingId;
 		const duration = await stop();
 		setCurrentMeetingId(null);
-		if (id) {
-			await addMeeting({
-				id,
-				title: "Reunião sem título",
-				createdAt: Date.now(),
-				durationSeconds: duration,
-			});
-			router.push(`/m/${id}`);
+		if (!id) return;
+
+		await updateMeetingDuration(id, duration);
+
+		const blob = await getRecordingBlob(id);
+		const isValid =
+			blob &&
+			blob.size > 0 &&
+			(blob.type.startsWith("audio/") ||
+				blob.type === "application/octet-stream");
+
+		if (isValid) {
+			try {
+				const { url, key } = await getUploadUrl(id);
+				const putRes = await fetch(url, {
+					method: "PUT",
+					body: blob,
+					headers: { "Content-Type": blob.type },
+				});
+				if (putRes.ok) {
+					await registerUpload({
+						meetingId: id,
+						key,
+						sizeBytes: blob.size,
+						contentType: blob.type,
+					});
+					await clearChunksForMeeting(id);
+				}
+			} catch (_e) {
+				// Upload falhou; chunks permanecem no IDB
+			}
 		}
-	}, [currentMeetingId, stop, addMeeting, router]);
+
+		router.push(`/m/${id}`);
+	}, [currentMeetingId, stop, router]);
 
 	return (
 		<div className="flex min-h-0 flex-1 flex-col">

@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 
 import { Spinner } from "@/components/ui/spinner";
-import type { MeetingRecord } from "@/lib/db";
+import type { MeetingForDisplay } from "@/lib/meetings";
 import { cn } from "@/lib/utils";
 
 function formatDuration(seconds: number) {
@@ -83,7 +83,7 @@ function stepRowBg(status: StepStatus) {
 }
 
 interface MeetingContextCardProps {
-	meeting: MeetingRecord;
+	meeting: MeetingForDisplay;
 	audioUrl: string | null;
 	recordingFailed?: boolean;
 	compact?: boolean;
