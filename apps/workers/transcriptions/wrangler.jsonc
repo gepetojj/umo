@@ -1,0 +1,40 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "umo_transcriptions",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-09-27",
+	"compatibility_flags": ["nodejs_compat"],
+	"observability": {
+		"logs": {
+			"enabled": true,
+			"head_sampling_rate": 0.3
+		},
+		"traces": {
+			"enabled": true,
+			"head_sampling_rate": 0.1
+		}
+	},
+	"placement": { "mode": "smart" },
+	"routes": [
+		{
+			"pattern": "transcriptions.umo.lnksl.com",
+			"custom_domain": true
+		}
+	],
+	"ai": {
+		"binding": "AI"
+	},
+	"vectorize": [
+		{
+			"binding": "VECTORS",
+			"index_name": "spark"
+		}
+	],
+	"secrets_store_secrets": [
+		{
+			"binding": "SECRETS",
+			"store_id": "99c7a9edacf84c7498bab2eb3903da47",
+			"secret_name": "VECTOR_API_KEY"
+		}
+	]
+}
