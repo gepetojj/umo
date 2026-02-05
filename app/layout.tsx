@@ -4,6 +4,9 @@ import "./globals.css";
 
 import clsx from "clsx/lite";
 
+import { PWARegister } from "@/components/pwa-register";
+import { QueryProvider } from "@/components/query-provider";
+
 const geistSans = Geist({
 	variable: "--font-geist-sans",
 	subsets: ["latin"],
@@ -33,7 +36,8 @@ export default function RootLayout({
 					"antialiased",
 				)}
 			>
-				{children}
+				<PWARegister />
+				<QueryProvider>{children}</QueryProvider>
 			</body>
 		</html>
 	);
