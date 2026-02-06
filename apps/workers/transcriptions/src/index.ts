@@ -1,10 +1,11 @@
+import { Buffer } from "node:buffer";
 import { timingSafeEqual } from "node:crypto";
 
 import z from "zod";
 
 const schema = z.object({
 	meetingId: z.string(),
-	recordingKey: z.string(),
+	recordingUrl: z.string(),
 });
 
 export default {
@@ -23,36 +24,49 @@ export default {
 			return new Response("Unauthorized", { status: 401 });
 		}
 
-		const { meetingId, recordingKey } = schema.parse(await request.json());
+		const { meetingId, recordingUrl } = schema.parse(await request.json());
 		await env.PRODUCER.send({
 			meetingId,
-			recordingKey,
+			recordingUrl,
 		});
 		return new Response("OK", { status: 200 });
 	},
 
 	async queue(batch, env): Promise<void> {
 		for (const message of batch.messages) {
-			const { meetingId, recordingKey } = schema.parse(message.body);
-			const object = await env.BUCKET.get(recordingKey);
+			const { meetingId, recordingUrl } = schema.parse(message.body);
 
-			if (!object) {
-				console.error(`Recording key ${recordingKey} not found.`);
+			const response = await fetch(recordingUrl);
+			if (!response.ok) {
+				console.error(
+					`Failed to fetch recording url ${recordingUrl}: ${response.statusText}`,
+				);
 				continue;
 			}
 
-			const buffer = Buffer.from(await object.arrayBuffer());
-			const result = await env.AI.run(
-				"@cf/openai/whisper-large-v3-turbo",
-				{
+			const buffer = Buffer.from(await response.arrayBuffer());
+			if (!buffer) {
+				console.error(`Recording url ${recordingUrl} not found.`);
+				continue;
+			}
+
+			let result: Ai_Cf_Openai_Whisper_Large_V3_Turbo_Output | null =
+				null;
+			try {
+				result = await env.AI.run("@cf/openai/whisper-large-v3-turbo", {
 					audio: buffer.toString("base64"),
 					task: "transcribe",
 					language: "pt",
 					vad_filter: true,
 					initial_prompt:
 						"Áudio capturado em uma reunião ou contexto social onde pessoas conversam.",
-				},
-			);
+				});
+			} catch (error) {
+				console.error(
+					`Failed to transcribe recording url ${recordingUrl}: ${error}`,
+				);
+				continue;
+			}
 
 			const content = result.text;
 			const vtt = result.vtt;

@@ -199,21 +199,49 @@ export default function MeetingChatPage() {
 								meeting={meeting}
 								audioUrl={audioUrl}
 								recordingFailed={recordingFailed}
+								transcriptionFailed={!!transcriptionError}
 								compact
 							/>
 							{transcriptionQueued &&
-								!meeting.transcriptionId && (
+								!meeting.transcriptionId &&
+								!transcriptionError && (
 									<p className="text-muted-foreground text-sm">
 										Transcrição na fila…
 									</p>
 								)}
 							{transcriptionError && (
-								<p
-									className="text-destructive text-sm"
+								<div
+									className="flex flex-wrap items-center gap-2"
 									role="alert"
 								>
-									{transcriptionError}
-								</p>
+									<p className="text-destructive text-sm">
+										{transcriptionError}
+									</p>
+									<Button
+										variant="outline"
+										size="sm"
+										onClick={() => {
+											setTranscriptionError(null);
+											generateTranscription({
+												meetingId: id,
+											})
+												.then(() =>
+													setTranscriptionQueued(
+														true,
+													),
+												)
+												.catch((e) =>
+													setTranscriptionError(
+														e instanceof Error
+															? e.message
+															: "Falha ao enfileirar transcrição",
+													),
+												);
+										}}
+									>
+										Tentar novamente
+									</Button>
+								</div>
 							)}
 						</div>
 					) : (
@@ -222,22 +250,50 @@ export default function MeetingChatPage() {
 								meeting={meeting}
 								audioUrl={audioUrl}
 								recordingFailed={recordingFailed}
+								transcriptionFailed={!!transcriptionError}
 								compact={false}
 								className="w-full max-w-lg"
 							/>
 							{transcriptionQueued &&
-								!meeting.transcriptionId && (
+								!meeting.transcriptionId &&
+								!transcriptionError && (
 									<p className="text-muted-foreground text-sm">
 										Transcrição na fila…
 									</p>
 								)}
 							{transcriptionError && (
-								<p
-									className="text-destructive text-sm"
+								<div
+									className="flex flex-col items-center gap-2 text-center"
 									role="alert"
 								>
-									{transcriptionError}
-								</p>
+									<p className="text-destructive text-sm">
+										{transcriptionError}
+									</p>
+									<Button
+										variant="outline"
+										size="sm"
+										onClick={() => {
+											setTranscriptionError(null);
+											generateTranscription({
+												meetingId: id,
+											})
+												.then(() =>
+													setTranscriptionQueued(
+														true,
+													),
+												)
+												.catch((e) =>
+													setTranscriptionError(
+														e instanceof Error
+															? e.message
+															: "Falha ao enfileirar transcrição",
+													),
+												);
+										}}
+									>
+										Tentar novamente
+									</Button>
+								</div>
 							)}
 						</div>
 					)}

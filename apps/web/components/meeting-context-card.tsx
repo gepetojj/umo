@@ -86,6 +86,8 @@ interface MeetingContextCardProps {
 	meeting: MeetingForDisplay;
 	audioUrl: string | null;
 	recordingFailed?: boolean;
+	/** Quando true, o passo "Transcrição" é exibido como falha (não como em progresso). */
+	transcriptionFailed?: boolean;
 	compact?: boolean;
 	className?: string;
 }
@@ -94,6 +96,7 @@ export function MeetingContextCard({
 	meeting,
 	audioUrl,
 	recordingFailed = false,
+	transcriptionFailed = false,
 	compact = false,
 	className,
 }: MeetingContextCardProps) {
@@ -109,6 +112,8 @@ export function MeetingContextCard({
 			(stepKey === "transcription" || stepKey === "summary")
 		)
 			return "cancelled";
+		if (stepKey === "transcription" && transcriptionFailed) return "failed";
+		if (stepKey === "summary" && transcriptionFailed) return "cancelled";
 		return defaultStatus;
 	}
 
