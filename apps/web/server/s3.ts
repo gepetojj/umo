@@ -9,6 +9,7 @@ export const s3 = new S3Client({
 		accessKeyId: env.S3_ACCESS_KEY,
 		secretAccessKey: env.S3_SECRET_KEY,
 	},
+	forcePathStyle: true,
 });
 
 export const s3PublicUrl = (key: string) =>

@@ -24,17 +24,33 @@
 	"ai": {
 		"binding": "AI"
 	},
-	"vectorize": [
-		{
-			"binding": "VECTORS",
-			"index_name": "spark"
-		}
-	],
 	"secrets_store_secrets": [
 		{
-			"binding": "SECRETS",
+			"binding": "SECRET",
 			"store_id": "99c7a9edacf84c7498bab2eb3903da47",
-			"secret_name": "VECTOR_API_KEY"
+			"secret_name": "UMO_TRANSCRIPTIONS_API_KEY"
+		}
+	],
+	"queues": {
+		"producers": [
+			{
+				"binding": "PRODUCER",
+				"queue": "umo-transcriptions"
+			}
+		],
+		"consumers": [
+			{
+				"queue": "umo-transcriptions",
+				"max_batch_size": 10,
+				"max_batch_timeout": 5 // 5 seconds
+			}
+		]
+	},
+	"r2_buckets": [
+		{
+			"binding": "BUCKET",
+			"bucket_name": "umo",
+			"remote": true
 		}
 	]
 }

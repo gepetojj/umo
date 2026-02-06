@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
 	Conversation,
@@ -25,6 +25,7 @@ import { MeetingContextCard } from "@/components/meeting-context-card";
 import { Button } from "@/components/ui/button";
 import { getRecordingBlob } from "@/lib/db";
 import { getMeeting } from "@/server/actions/meetings/get-meeting";
+import { generateTranscription } from "@/server/actions/transcriptions/generate-transcription";
 
 export default function MeetingChatPage() {
 	const params = useParams();
@@ -35,7 +36,18 @@ export default function MeetingChatPage() {
 	const [loading, setLoading] = useState(true);
 	const [audioUrl, setAudioUrl] = useState<string | null>(null);
 	const [recordingFailed, setRecordingFailed] = useState(false);
+	const [transcriptionQueued, setTranscriptionQueued] = useState(false);
+	const [transcriptionError, setTranscriptionError] = useState<string | null>(
+		null,
+	);
+	const transcriptionTriggeredRef = useRef(false);
 	const [input, setInput] = useState("");
+
+	const refetchMeeting = useCallback(async () => {
+		if (!id) return;
+		const m = await getMeeting(id);
+		setMeeting(m ?? null);
+	}, [id]);
 
 	// Carrega reunião
 	useEffect(() => {
@@ -54,6 +66,39 @@ export default function MeetingChatPage() {
 			cancelled = true;
 		};
 	}, [id]);
+
+	// Dispara transcrição na fila quando há gravação e ainda não há transcrição
+	useEffect(() => {
+		if (
+			!id ||
+			!meeting ||
+			!meeting.recordingKey ||
+			meeting.transcriptionId ||
+			transcriptionTriggeredRef.current
+		)
+			return;
+		transcriptionTriggeredRef.current = true;
+		setTranscriptionError(null);
+		generateTranscription({ meetingId: id })
+			.then(() => {
+				setTranscriptionQueued(true);
+			})
+			.catch((e) => {
+				setTranscriptionError(
+					e instanceof Error
+						? e.message
+						: "Falha ao enfileirar transcrição",
+				);
+			});
+	}, [id, meeting]);
+
+	// Polling: atualiza meeting quando transcrição estiver pronta
+	useEffect(() => {
+		if (!id || !transcriptionQueued || !meeting || meeting.transcriptionId)
+			return;
+		const interval = setInterval(refetchMeeting, 4000);
+		return () => clearInterval(interval);
+	}, [id, transcriptionQueued, meeting, refetchMeeting]);
 
 	// Carrega áudio: URL do S3 se já registrou upload, senão blob temporário do IDB
 	useEffect(() => {
@@ -149,16 +194,30 @@ export default function MeetingChatPage() {
 				<ConversationContent className="flex flex-col gap-8">
 					{/* Bloco de contexto: centralizado sem outras mensagens, no topo e resumido com mensagens */}
 					{hasRealMessages ? (
-						<div className="shrink-0">
+						<div className="shrink-0 space-y-1">
 							<MeetingContextCard
 								meeting={meeting}
 								audioUrl={audioUrl}
 								recordingFailed={recordingFailed}
 								compact
 							/>
+							{transcriptionQueued &&
+								!meeting.transcriptionId && (
+									<p className="text-muted-foreground text-sm">
+										Transcrição na fila…
+									</p>
+								)}
+							{transcriptionError && (
+								<p
+									className="text-destructive text-sm"
+									role="alert"
+								>
+									{transcriptionError}
+								</p>
+							)}
 						</div>
 					) : (
-						<div className="flex min-h-0 flex-1 flex-col items-center justify-center py-8">
+						<div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 py-8">
 							<MeetingContextCard
 								meeting={meeting}
 								audioUrl={audioUrl}
@@ -166,6 +225,20 @@ export default function MeetingChatPage() {
 								compact={false}
 								className="w-full max-w-lg"
 							/>
+							{transcriptionQueued &&
+								!meeting.transcriptionId && (
+									<p className="text-muted-foreground text-sm">
+										Transcrição na fila…
+									</p>
+								)}
+							{transcriptionError && (
+								<p
+									className="text-destructive text-sm"
+									role="alert"
+								>
+									{transcriptionError}
+								</p>
+							)}
 						</div>
 					)}
 

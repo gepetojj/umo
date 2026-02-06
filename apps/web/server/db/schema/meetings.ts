@@ -2,6 +2,7 @@ import { relations } from "drizzle-orm";
 import { integer, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 import { objectsTable } from "./objects";
+import { transcriptionsTable } from "./transcriptions";
 
 export const meetingsTable = pgTable("meetings", {
 	id: uuid("id").primaryKey(),
@@ -14,6 +15,7 @@ export const meetingsTable = pgTable("meetings", {
 		.$onUpdate(() => new Date()),
 });
 
-export const meetingsRelations = relations(meetingsTable, ({ many }) => ({
+export const meetingsRelations = relations(meetingsTable, ({ many, one }) => ({
 	objects: many(objectsTable),
+	transcriptions: one(transcriptionsTable),
 }));

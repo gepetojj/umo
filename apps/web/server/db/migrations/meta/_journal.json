@@ -8,6 +8,13 @@
 			"when": 1770325497635,
 			"tag": "0000_colossal_dreaming_celestial",
 			"breakpoints": true
+		},
+		{
+			"idx": 1,
+			"version": "7",
+			"when": 1770330437532,
+			"tag": "0001_greedy_ikaris",
+			"breakpoints": true
 		}
 	]
 }
