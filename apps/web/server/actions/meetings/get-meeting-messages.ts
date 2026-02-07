@@ -1,6 +1,6 @@
 "use server";
 
-import type { UIMessage } from "ai";
+import type { UIDataTypes, UIMessage, UIMessagePart, UITools } from "ai";
 import { asc, eq } from "drizzle-orm";
 
 import { db } from "@/server/db";
@@ -26,6 +26,9 @@ export async function getMeetingMessages(
 	return rows.map((row) => ({
 		id: row.id,
 		role: row.role as UIMessage["role"],
-		parts: Array.isArray(row.parts) ? row.parts : [],
+		parts: (Array.isArray(row.parts) ? row.parts : []) as UIMessagePart<
+			UIDataTypes,
+			UITools
+		>[],
 	}));
 }
