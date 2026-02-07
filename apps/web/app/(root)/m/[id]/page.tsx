@@ -25,7 +25,7 @@ import { MeetingContextCard } from "@/components/meeting-context-card";
 import { Button } from "@/components/ui/button";
 import { getRecordingBlob } from "@/lib/db";
 import { getMeeting } from "@/server/actions/meetings/get-meeting";
-import { generateTranscription } from "@/server/actions/transcriptions/generate-transcription";
+import { processTranscriptions } from "@/server/actions/transcriptions/process-transcriptions";
 
 export default function MeetingChatPage() {
 	const params = useParams();
@@ -67,34 +67,42 @@ export default function MeetingChatPage() {
 		};
 	}, [id]);
 
-	// Dispara transcrição na fila quando há gravação e ainda não há transcrição
+	// Dispara transcrição para gravações chunk-based (totalChunks definido)
 	useEffect(() => {
 		if (
 			!id ||
 			!meeting ||
-			!meeting.recordingKey ||
 			meeting.transcriptionId ||
+			!meeting.transcriptionPending ||
+			!meeting.totalChunks ||
 			transcriptionTriggeredRef.current
 		)
 			return;
 		transcriptionTriggeredRef.current = true;
 		setTranscriptionError(null);
-		generateTranscription({ meetingId: id })
+		setTranscriptionQueued(true);
+		processTranscriptions({ meetingId: id })
 			.then(() => {
-				setTranscriptionQueued(true);
+				refetchMeeting();
 			})
 			.catch((e) => {
+				setTranscriptionQueued(false);
 				setTranscriptionError(
 					e instanceof Error
 						? e.message
-						: "Falha ao enfileirar transcrição",
+						: "Falha ao processar transcrições",
 				);
 			});
-	}, [id, meeting]);
+	}, [id, meeting, refetchMeeting]);
 
-	// Polling: atualiza meeting quando transcrição estiver pronta
+	// Polling: atualiza meeting quando transcrição estiver pronta (legado na fila ou chunk-based em andamento)
 	useEffect(() => {
-		if (!id || !transcriptionQueued || !meeting || meeting.transcriptionId)
+		if (
+			!id ||
+			!meeting ||
+			meeting.transcriptionId ||
+			(!transcriptionQueued && !meeting.transcriptionPending)
+		)
 			return;
 		const interval = setInterval(refetchMeeting, 4000);
 		return () => clearInterval(interval);
@@ -106,9 +114,11 @@ export default function MeetingChatPage() {
 		let cancelled = false;
 		setRecordingFailed(false);
 
-		if (meeting.recordingKey) {
+		const key =
+			meeting.recordingChunkKeys?.[0] ?? meeting.recordingKey ?? null;
+		if (key) {
 			const base = process.env.NEXT_PUBLIC_S3_PUBLIC_URL ?? "";
-			setAudioUrl(base ? `${base}/${meeting.recordingKey}` : null);
+			setAudioUrl(base ? `${base}/${key}` : null);
 			if (!base) setRecordingFailed(true);
 			return;
 		}
@@ -202,11 +212,14 @@ export default function MeetingChatPage() {
 								transcriptionFailed={!!transcriptionError}
 								compact
 							/>
-							{transcriptionQueued &&
+							{(transcriptionQueued ||
+								meeting.transcriptionPending) &&
 								!meeting.transcriptionId &&
 								!transcriptionError && (
 									<p className="text-muted-foreground text-sm">
-										Transcrição na fila…
+										{meeting.transcriptionPending
+											? "Transcrição em andamento…"
+											: "Transcrição na fila…"}
 									</p>
 								)}
 							{transcriptionError && (
@@ -222,21 +235,22 @@ export default function MeetingChatPage() {
 										size="sm"
 										onClick={() => {
 											setTranscriptionError(null);
-											generateTranscription({
+											setTranscriptionQueued(true);
+											transcriptionTriggeredRef.current = true;
+											processTranscriptions({
 												meetingId: id,
 											})
-												.then(() =>
+												.then(() => refetchMeeting())
+												.catch((e) => {
 													setTranscriptionQueued(
-														true,
-													),
-												)
-												.catch((e) =>
+														false,
+													);
 													setTranscriptionError(
 														e instanceof Error
 															? e.message
-															: "Falha ao enfileirar transcrição",
-													),
-												);
+															: "Falha ao processar transcrições",
+													);
+												});
 										}}
 									>
 										Tentar novamente
@@ -254,11 +268,14 @@ export default function MeetingChatPage() {
 								compact={false}
 								className="w-full max-w-lg"
 							/>
-							{transcriptionQueued &&
+							{(transcriptionQueued ||
+								meeting.transcriptionPending) &&
 								!meeting.transcriptionId &&
 								!transcriptionError && (
 									<p className="text-muted-foreground text-sm">
-										Transcrição na fila…
+										{meeting.transcriptionPending
+											? "Transcrição em andamento…"
+											: "Transcrição na fila…"}
 									</p>
 								)}
 							{transcriptionError && (
@@ -274,21 +291,22 @@ export default function MeetingChatPage() {
 										size="sm"
 										onClick={() => {
 											setTranscriptionError(null);
-											generateTranscription({
+											setTranscriptionQueued(true);
+											transcriptionTriggeredRef.current = true;
+											processTranscriptions({
 												meetingId: id,
 											})
-												.then(() =>
+												.then(() => refetchMeeting())
+												.catch((e) => {
 													setTranscriptionQueued(
-														true,
-													),
-												)
-												.catch((e) =>
+														false,
+													);
 													setTranscriptionError(
 														e instanceof Error
 															? e.message
-															: "Falha ao enfileirar transcrição",
-													),
-												);
+															: "Falha ao processar transcrições",
+													);
+												});
 										}}
 									>
 										Tentar novamente

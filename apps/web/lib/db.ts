@@ -52,7 +52,7 @@ export async function addChunk(
 	blob: Blob,
 ): Promise<void> {
 	const db = await getDB();
-	await db.add("chunks", { meetingId, index, blob });
+	await db.put("chunks", { meetingId, index, blob });
 }
 
 export async function getChunksForMeeting(meetingId: string): Promise<Blob[]> {

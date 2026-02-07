@@ -11,11 +11,9 @@ import {
 } from "@/components/ai-elements/conversation";
 import { Button } from "@/components/ui/button";
 import { useRecorder } from "@/hooks/use-recorder";
-import { clearChunksForMeeting, getRecordingBlob } from "@/lib/db";
+import { clearChunksForMeeting } from "@/lib/db";
 import { useMeetings } from "@/lib/use-meetings";
 import { updateMeetingDuration } from "@/server/actions/meetings/update-meeting-duration";
-import { getUploadUrl } from "@/server/actions/objects/get-upload-url";
-import { registerUpload } from "@/server/actions/objects/register-upload";
 
 function formatDuration(seconds: number) {
 	const m = Math.floor(seconds / 60);
@@ -42,40 +40,12 @@ export default function NewMeetingPage() {
 
 	const handleStopRecording = useCallback(async () => {
 		const id = currentMeetingId;
-		const duration = await stop();
+		const { duration, totalChunks } = await stop();
 		setCurrentMeetingId(null);
 		if (!id) return;
 
-		await updateMeetingDuration(id, duration);
-
-		const blob = await getRecordingBlob(id);
-		const isValid =
-			blob &&
-			blob.size > 0 &&
-			(blob.type.startsWith("audio/") ||
-				blob.type === "application/octet-stream");
-
-		if (isValid) {
-			try {
-				const { url, key } = await getUploadUrl(id);
-				const putRes = await fetch(url, {
-					method: "PUT",
-					body: blob,
-					headers: { "Content-Type": blob.type },
-				});
-				if (putRes.ok) {
-					await registerUpload({
-						meetingId: id,
-						key,
-						sizeBytes: blob.size,
-						contentType: blob.type,
-					});
-					await clearChunksForMeeting(id);
-				}
-			} catch (_e) {
-				// Upload falhou; chunks permanecem no IDB
-			}
-		}
+		await updateMeetingDuration(id, duration, totalChunks);
+		await clearChunksForMeeting(id);
 
 		router.push(`/m/${id}`);
 	}, [currentMeetingId, stop, router]);

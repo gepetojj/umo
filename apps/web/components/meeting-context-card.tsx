@@ -24,7 +24,7 @@ const STEP_CONFIG = [
 	{
 		key: "transcription",
 		label: "Transcrição",
-		status: "in_progress" as StepStatus,
+		status: "pending" as StepStatus,
 	},
 	{
 		key: "summary",
@@ -114,6 +114,17 @@ export function MeetingContextCard({
 			return "cancelled";
 		if (stepKey === "transcription" && transcriptionFailed) return "failed";
 		if (stepKey === "summary" && transcriptionFailed) return "cancelled";
+		// Transcrição concluída quando há transcriptionId
+		if (stepKey === "transcription" && meeting.transcriptionId) {
+			return "done";
+		}
+		// Transcrição em andamento quando há gravação mas ainda não há transcrição
+		if (
+			stepKey === "transcription" &&
+			(meeting.transcriptionPending ?? false)
+		) {
+			return "in_progress";
+		}
 		return defaultStatus;
 	}
 

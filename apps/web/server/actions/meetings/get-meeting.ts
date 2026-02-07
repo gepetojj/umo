@@ -1,6 +1,6 @@
 "use server";
 
-import { and, desc, eq } from "drizzle-orm";
+import { and, asc, eq, isNull } from "drizzle-orm";
 
 import { db } from "@/server/db";
 import { meetingsTable } from "@/server/db/schema/meetings";
@@ -15,8 +15,8 @@ export const getMeeting = async (meetingId: string) => {
 		.limit(1);
 	if (!meeting) return null;
 
-	const [recording] = await db
-		.select({ key: objectsTable.key })
+	const recordings = await db
+		.select({ key: objectsTable.key, chunkIndex: objectsTable.chunkIndex })
 		.from(objectsTable)
 		.where(
 			and(
@@ -24,22 +24,36 @@ export const getMeeting = async (meetingId: string) => {
 				eq(objectsTable.type, "recording"),
 			),
 		)
-		.orderBy(desc(objectsTable.createdAt))
-		.limit(1);
+		.orderBy(asc(objectsTable.chunkIndex));
 
-	const [transcription] = await db
+	const recordingKey =
+		recordings.length > 0 ? (recordings[0]?.key ?? null) : null;
+	const recordingChunkKeys =
+		recordings.length > 0 ? recordings.map((r) => r.key) : [];
+
+	const [finalTranscription] = await db
 		.select({ id: transcriptionsTable.id })
 		.from(transcriptionsTable)
-		.where(eq(transcriptionsTable.meetingId, meetingId))
-		.orderBy(desc(transcriptionsTable.createdAt))
+		.where(
+			and(
+				eq(transcriptionsTable.meetingId, meetingId),
+				isNull(transcriptionsTable.chunkIndex),
+			),
+		)
 		.limit(1);
+
+	const transcriptionId = finalTranscription?.id ?? null;
+	const transcriptionPending = recordings.length > 0 && !finalTranscription;
 
 	return {
 		id: meeting.id,
 		title: meeting.title,
 		durationSeconds: meeting.durationSeconds,
+		totalChunks: meeting.totalChunks,
 		createdAt: meeting.createdAt.getTime(),
-		recordingKey: recording?.key ?? null,
-		transcriptionId: transcription?.id ?? null,
+		recordingKey,
+		recordingChunkKeys,
+		transcriptionId,
+		transcriptionPending,
 	};
 };

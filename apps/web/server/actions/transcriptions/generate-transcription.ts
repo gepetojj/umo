@@ -39,6 +39,12 @@ export const generateTranscription = async (data: z.infer<typeof schema>) => {
 		throw new Error("Recording not found");
 	}
 
+	if (!env.TRANSCRIPTIONS_URL || !env.TRANSCRIPTIONS_API_KEY) {
+		throw new Error(
+			"Legacy transcription not configured (TRANSCRIPTIONS_URL and TRANSCRIPTIONS_API_KEY required for full-file uploads). Use chunk-based recording for server-side transcription.",
+		);
+	}
+
 	const transcription = await fetch(env.TRANSCRIPTIONS_URL, {
 		method: "POST",
 		headers: {

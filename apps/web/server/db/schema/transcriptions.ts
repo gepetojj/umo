@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { integer, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 import { meetingsTable } from "./meetings";
 
@@ -10,6 +10,8 @@ export const transcriptionsTable = pgTable("transcriptions", {
 	}),
 	content: text("content").notNull(),
 	vtt: text("vtt"),
+	chunkIndex: integer("chunk_index"),
+	chunkDurationMs: integer("chunk_duration_ms"),
 	createdAt: timestamp("created_at").notNull().defaultNow(),
 	updatedAt: timestamp("updated_at")
 		.notNull()

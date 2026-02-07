@@ -21,6 +21,7 @@ export const objectsTable = pgTable("objects", {
 	key: text("key").notNull(),
 	sizeBytes: integer("size_bytes").notNull(),
 	contentType: text("content_type").notNull(),
+	chunkIndex: integer("chunk_index"),
 	createdAt: timestamp("created_at").notNull().defaultNow(),
 	updatedAt: timestamp("updated_at")
 		.notNull()

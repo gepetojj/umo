@@ -11,7 +11,7 @@ export const env = z
 
 		DATABASE_URL: z.string(),
 
-		TRANSCRIPTIONS_URL: z.string(),
-		TRANSCRIPTIONS_API_KEY: z.string(),
+		CLOUDFLARE_ACCOUNT_ID: z.string(),
+		CLOUDFLARE_AIG_API_KEY: z.string(),
 	})
 	.parse(process.env);

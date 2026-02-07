@@ -15,6 +15,20 @@
 			"when": 1770330437532,
 			"tag": "0001_greedy_ikaris",
 			"breakpoints": true
+		},
+		{
+			"idx": 2,
+			"version": "7",
+			"when": 1770385665343,
+			"tag": "0002_chunk_index_and_duration",
+			"breakpoints": true
+		},
+		{
+			"idx": 3,
+			"version": "7",
+			"when": 1770394629502,
+			"tag": "0003_pink_newton_destine",
+			"breakpoints": true
 		}
 	]
 }
