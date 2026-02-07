@@ -1,6 +1,7 @@
 import { relations } from "drizzle-orm";
 import { integer, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
+import { meetingMessagesTable } from "./meeting-messages";
 import { objectsTable } from "./objects";
 import { transcriptionsTable } from "./transcriptions";
 
@@ -17,6 +18,7 @@ export const meetingsTable = pgTable("meetings", {
 });
 
 export const meetingsRelations = relations(meetingsTable, ({ many, one }) => ({
+	meetingMessages: many(meetingMessagesTable),
 	objects: many(objectsTable),
 	transcriptions: one(transcriptionsTable),
 }));

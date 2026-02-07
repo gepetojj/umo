@@ -88,6 +88,8 @@ interface MeetingContextCardProps {
 	recordingFailed?: boolean;
 	/** Quando true, o passo "Transcrição" é exibido como falha (não como em progresso). */
 	transcriptionFailed?: boolean;
+	/** Quando true, esconde a lista de etapas (para o header fixo quando há mensagens). */
+	hideSteps?: boolean;
 	compact?: boolean;
 	className?: string;
 }
@@ -97,6 +99,7 @@ export function MeetingContextCard({
 	audioUrl,
 	recordingFailed = false,
 	transcriptionFailed = false,
+	hideSteps = false,
 	compact = false,
 	className,
 }: MeetingContextCardProps) {
@@ -169,46 +172,48 @@ export function MeetingContextCard({
 					</audio>
 				</div>
 			)}
-			<ol
-				className={cn(
-					"flex list-none flex-col gap-1 p-0",
-					compact ? "gap-1" : "gap-1.5",
-				)}
-				aria-label="Status do processamento"
-			>
-				{STEP_CONFIG.map((step) => {
-					const status = getStepStatus(step.key, step.status);
-					return (
-						<li
-							key={step.key}
-							className={cn(
-								"flex flex-row items-center justify-between rounded-md px-3 py-2",
-								compact ? "px-2.5 py-1.5" : "px-3 py-2",
-								stepRowBg(status),
-							)}
-						>
-							<span
+			{!hideSteps && (
+				<ol
+					className={cn(
+						"flex list-none flex-col gap-1 p-0",
+						compact ? "gap-1" : "gap-1.5",
+					)}
+					aria-label="Status do processamento"
+				>
+					{STEP_CONFIG.map((step) => {
+						const status = getStepStatus(step.key, step.status);
+						return (
+							<li
+								key={step.key}
 								className={cn(
-									compact && "text-xs",
-									"text-sm",
-									status === "done" &&
-										"font-medium text-foreground",
-									status === "failed" &&
-										"font-medium text-destructive",
-									(status === "pending" ||
-										status === "in_progress") &&
-										"text-muted-foreground",
-									status === "cancelled" &&
-										"text-muted-foreground/70",
+									"flex flex-row items-center justify-between rounded-md px-3 py-2",
+									compact ? "px-2.5 py-1.5" : "px-3 py-2",
+									stepRowBg(status),
 								)}
 							>
-								{step.label}
-							</span>
-							<StepIndicator status={status} />
-						</li>
-					);
-				})}
-			</ol>
+								<span
+									className={cn(
+										compact && "text-xs",
+										"text-sm",
+										status === "done" &&
+											"font-medium text-foreground",
+										status === "failed" &&
+											"font-medium text-destructive",
+										(status === "pending" ||
+											status === "in_progress") &&
+											"text-muted-foreground",
+										status === "cancelled" &&
+											"text-muted-foreground/70",
+									)}
+								>
+									{step.label}
+								</span>
+								<StepIndicator status={status} />
+							</li>
+						);
+					})}
+				</ol>
+			)}
 		</section>
 	);
 }

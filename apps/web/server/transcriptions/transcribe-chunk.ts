@@ -198,6 +198,13 @@ export async function processAllTranscriptions(
 			.set({ title })
 			.where(eq(meetingsTable.id, meetingId));
 	}
+
+	const { generateAndSaveMeetingSummary } = await import(
+		"@/server/ai/generate-meeting-summary"
+	);
+	await generateAndSaveMeetingSummary(meetingId, content).catch((err) => {
+		console.error("Meeting summary generation error:", err);
+	});
 }
 
 /**
