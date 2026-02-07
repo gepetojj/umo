@@ -4,7 +4,8 @@ import { createUnified } from "ai-gateway-provider/providers/unified";
 
 import { env } from "../env";
 
-const CLOUDFLARE_AI_MODEL_ID = "workers-ai/@cf/openai/gpt-oss-20b" as const;
+const CLOUDFLARE_AI_MODEL_ID =
+	"workers-ai/@cf/ibm-granite/granite-4.0-h-micro" as const;
 
 export type CloudflareAIModel = ReturnType<OpenAIProvider>;
 
