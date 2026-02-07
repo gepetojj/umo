@@ -26,10 +26,19 @@ export const getMeeting = async (meetingId: string) => {
 		)
 		.orderBy(asc(objectsTable.chunkIndex));
 
-	const recordingKey =
-		recordings.length > 0 ? (recordings[0]?.key ?? null) : null;
+	// Prefer full recording (chunkIndex null) for playback — one URL = entire meeting
+	const fullRecording = recordings.find((r) => r.chunkIndex === null);
+	const recordingKey = fullRecording
+		? fullRecording.key
+		: recordings.length > 0
+			? (recordings[0]?.key ?? null)
+			: null;
 	const recordingChunkKeys =
-		recordings.length > 0 ? recordings.map((r) => r.key) : [];
+		recordings.length > 0
+			? fullRecording
+				? [fullRecording.key]
+				: recordings.map((r) => r.key)
+			: [];
 
 	const [finalTranscription] = await db
 		.select({ id: transcriptionsTable.id })

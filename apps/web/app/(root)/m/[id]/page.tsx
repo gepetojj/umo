@@ -1,5 +1,6 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -24,6 +25,7 @@ import {
 import { MeetingContextCard } from "@/components/meeting-context-card";
 import { Button } from "@/components/ui/button";
 import { getRecordingBlob } from "@/lib/db";
+import { meetingsQueryKey } from "@/lib/use-meetings";
 import { getMeeting } from "@/server/actions/meetings/get-meeting";
 import { processTranscriptions } from "@/server/actions/transcriptions/process-transcriptions";
 
@@ -41,7 +43,9 @@ export default function MeetingChatPage() {
 		null,
 	);
 	const transcriptionTriggeredRef = useRef(false);
+	const sidebarInvalidatedRef = useRef(false);
 	const [input, setInput] = useState("");
+	const queryClient = useQueryClient();
 
 	const refetchMeeting = useCallback(async () => {
 		if (!id) return;
@@ -107,6 +111,13 @@ export default function MeetingChatPage() {
 		const interval = setInterval(refetchMeeting, 4000);
 		return () => clearInterval(interval);
 	}, [id, transcriptionQueued, meeting, refetchMeeting]);
+
+	// Quando a transcrição fica pronta, invalida a query do sidebar para atualizar o título da meeting
+	useEffect(() => {
+		if (!meeting?.transcriptionId || sidebarInvalidatedRef.current) return;
+		sidebarInvalidatedRef.current = true;
+		queryClient.invalidateQueries({ queryKey: meetingsQueryKey });
+	}, [meeting?.transcriptionId, queryClient]);
 
 	// Carrega áudio: URL do S3 se já registrou upload, senão blob temporário do IDB
 	useEffect(() => {

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { generateText } from "ai";
 import { and, asc, eq, isNotNull, isNull } from "drizzle-orm";
 
@@ -9,7 +10,7 @@ import { meetingsTable } from "@/server/db/schema/meetings";
 import { objectsTable } from "@/server/db/schema/objects";
 import { transcriptionsTable } from "@/server/db/schema/transcriptions";
 import { env } from "@/server/env";
-import { s3PublicUrl } from "@/server/s3";
+import { s3, s3PublicUrl } from "@/server/s3";
 
 const BASE_CONTEXT =
 	"Áudio capturado em uma reunião ou contexto social onde pessoas conversam.";
@@ -122,7 +123,11 @@ export async function processAllTranscriptions(
 	if (existing) return;
 
 	const chunkObjects = await db
-		.select({ chunkIndex: objectsTable.chunkIndex, key: objectsTable.key })
+		.select({
+			chunkIndex: objectsTable.chunkIndex,
+			key: objectsTable.key,
+			contentType: objectsTable.contentType,
+		})
 		.from(objectsTable)
 		.where(
 			and(
@@ -141,6 +146,39 @@ export async function processAllTranscriptions(
 	);
 	// Single valid WebM: first chunk has header, rest are continuations
 	const fullAudio = Buffer.concat(buffers);
+
+	// Upload full recording to S3 for playback (one URL = full meeting)
+	const fullRecordingKey = `meetings/${meetingId}/recording.webm`;
+	const contentType = chunkObjects[0]?.contentType ?? "audio/webm";
+	const [existingFull] = await db
+		.select({ id: objectsTable.id })
+		.from(objectsTable)
+		.where(
+			and(
+				eq(objectsTable.meetingId, meetingId),
+				eq(objectsTable.type, "recording"),
+				isNull(objectsTable.chunkIndex),
+			),
+		)
+		.limit(1);
+	if (!existingFull) {
+		await s3.send(
+			new PutObjectCommand({
+				Bucket: env.S3_BUCKET,
+				Key: fullRecordingKey,
+				Body: fullAudio,
+				ContentType: contentType,
+			}),
+		);
+		await db.insert(objectsTable).values({
+			id: randomUUID(),
+			meetingId,
+			key: fullRecordingKey,
+			sizeBytes: fullAudio.length,
+			contentType,
+			chunkIndex: null,
+		});
+	}
 
 	const { content, vtt } = await transcribeFullAudio(fullAudio);
 
