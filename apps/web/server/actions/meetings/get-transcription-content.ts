@@ -13,7 +13,10 @@ export async function getTranscriptionContent(
 	meetingId: string,
 ): Promise<string | null> {
 	const [row] = await db
-		.select({ content: transcriptionsTable.content })
+		.select({
+			content: transcriptionsTable.content,
+			vtt: transcriptionsTable.vtt,
+		})
 		.from(transcriptionsTable)
 		.where(
 			and(
@@ -23,5 +26,5 @@ export async function getTranscriptionContent(
 		)
 		.limit(1);
 
-	return row?.content ?? null;
+	return row?.vtt || row?.content || null;
 }
