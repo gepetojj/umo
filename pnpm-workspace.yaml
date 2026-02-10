@@ -4,6 +4,7 @@ packages:
   - apps/workers/*
 
 onlyBuiltDependencies:
+  - '@clerk/shared'
   - esbuild
   - sharp
   - unrs-resolver

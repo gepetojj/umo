@@ -13,5 +13,8 @@ export const env = z
 
 		CLOUDFLARE_ACCOUNT_ID: z.string(),
 		CLOUDFLARE_AIG_API_KEY: z.string(),
+
+		CLERK_SECRET_KEY: z.string(),
+		CLERK_WEBHOOK_SECRET: z.string(),
 	})
 	.parse(process.env);
