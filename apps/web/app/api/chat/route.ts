@@ -83,6 +83,7 @@ ${transcriptionContent ?? "Nenhuma transcrição disponível."}
 		model,
 		system: systemPrompt,
 		messages: await convertToModelMessages(messages as UIMessage[]),
+		maxOutputTokens: 4096,
 	});
 
 	return result.toUIMessageStreamResponse();
