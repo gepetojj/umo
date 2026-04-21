@@ -1,11 +1,15 @@
+import { currentUser } from "@clerk/nextjs/server";
 import { convertToModelMessages, streamText, type UIMessage } from "ai";
 import { eq } from "drizzle-orm";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 
 import { getCloudflareModel } from "@/lib/ai/cloudflare-provider";
+import { getActiveSubscription } from "@/lib/subscriptions/get-active-subscription";
+import { getUserFromClerk } from "@/lib/subscriptions/get-user-from-clerk";
 import { unwrapSafeActionResult } from "@/lib/unwrap-safe-action-result";
 import { getTranscriptionContentAction } from "@/server/actions/meetings/get-transcription-content.action";
+import { saveMeetingMessageAction } from "@/server/actions/meetings/save-meeting-message.action";
 import { db } from "@/server/db";
 import { meetingMessagesTable } from "@/server/db/schema/meeting-messages";
 
@@ -33,6 +37,21 @@ export async function POST(req: NextRequest) {
 	const { meetingId, messages } = body;
 	if (messages.length === 0) {
 		return new Response("Messages required", { status: 400 });
+	}
+
+	const clerkUser = await currentUser();
+	if (!clerkUser) {
+		return new Response("Unauthorized", { status: 401 });
+	}
+
+	const user = await getUserFromClerk(clerkUser.id);
+	if (!user) {
+		return new Response("Unauthorized", { status: 401 });
+	}
+
+	const subscription = await getActiveSubscription(user?.id);
+	if (!subscription) {
+		return new Response("No active subscription", { status: 402 });
 	}
 
 	const lastMessage = messages[messages.length - 1] as UIMessage;
@@ -89,5 +108,14 @@ ${transcriptionContent ?? "Nenhuma transcrição disponível."}
 		maxOutputTokens: 4096,
 	});
 
-	return result.toUIMessageStreamResponse();
+	return result.toUIMessageStreamResponse({
+		onFinish: async ({ responseMessage }) => {
+			unwrapSafeActionResult(
+				await saveMeetingMessageAction({
+					meetingId: body.meetingId,
+					message: responseMessage,
+				}),
+			);
+		},
+	});
 }

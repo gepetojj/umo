@@ -3,7 +3,7 @@
 import { start } from "workflow/api";
 
 import { uploadChunkSchema } from "@/server/actions/objects/schemas/upload-chunk.schema";
-import { authActionClient } from "@/server/actions/safe-action";
+import { paidActionClient } from "@/server/actions/safe-action";
 import { persistAudioChunkWorkflow } from "@/workflows/persist-audio-chunk";
 
 /**
@@ -11,7 +11,7 @@ import { persistAudioChunkWorkflow } from "@/workflows/persist-audio-chunk";
  * Awaits workflow completion so callers (e.g. recorder stop) only resolve after the chunk is persisted.
  * Transcription runs separately via the processTranscriptions server action.
  */
-export const uploadChunkAction = authActionClient
+export const uploadChunkAction = paidActionClient
 	.inputSchema(uploadChunkSchema)
 	.action(async ({ parsedInput: { meetingId, chunkIndex, chunk } }) => {
 		const buffer = Buffer.from(await chunk.arrayBuffer());

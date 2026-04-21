@@ -286,22 +286,6 @@ export default function MeetingChatPage() {
 	const { messages, sendMessage, status, stop, setMessages } = useChat({
 		transport,
 		messages: initialMessages,
-		onFinish: (event) => {
-			const { message } = event;
-			if (!id || message.role !== "assistant") return;
-			fetch("/api/chat/message", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					meetingId: id,
-					message: {
-						id: message.id,
-						role: message.role,
-						parts: message.parts,
-					},
-				}),
-			}).catch(console.error);
-		},
 	});
 
 	// Sincroniza mensagens iniciais quando carregam após o primeiro render

@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { createSafeActionClient } from "next-safe-action";
 import { ZodError } from "zod";
 
+import { getActiveSubscription } from "@/lib/subscriptions/get-active-subscription";
 import { db } from "@/server/db";
 import { usersTable } from "@/server/db/schema/users";
 
@@ -50,3 +51,16 @@ export const authActionClient = actionClient.use(async ({ next }) => {
 		},
 	});
 });
+
+export const paidActionClient = authActionClient.use(
+	async ({ ctx: { user }, next }) => {
+		const subscription = await getActiveSubscription(user.id);
+		if (!subscription) throw new AuthError("No active subscription");
+
+		return next({
+			ctx: {
+				subscription,
+			},
+		});
+	},
+);

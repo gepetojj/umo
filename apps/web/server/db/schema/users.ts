@@ -6,6 +6,7 @@ import { subscriptionsTable } from "./subscriptions";
 export const usersTable = pgTable("users", {
 	id: uuid("id").primaryKey(),
 	clerkId: text("clerk_id").unique().notNull(),
+	stripeId: text("stripe_id").unique(),
 	fullName: text("full_name").notNull(),
 	email: text("email").unique().notNull(),
 	avatarUrl: text("avatar_url"),

@@ -3,11 +3,11 @@
 import { randomUUID } from "node:crypto";
 
 import { createMeetingSchema } from "@/server/actions/meetings/schemas/create-meeting.schema";
-import { authActionClient } from "@/server/actions/safe-action";
+import { paidActionClient } from "@/server/actions/safe-action";
 import { db } from "@/server/db";
 import { meetingsTable } from "@/server/db/schema/meetings";
 
-export const createMeetingAction = authActionClient
+export const createMeetingAction = paidActionClient
 	.inputSchema(createMeetingSchema)
 	.action(async ({ parsedInput }) => {
 		const id = randomUUID();

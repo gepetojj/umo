@@ -8,6 +8,7 @@ import { Webhook } from "svix";
 import { db } from "@/server/db";
 import { usersTable } from "@/server/db/schema/users";
 import { env } from "@/server/env";
+import { stripe } from "@/server/stripe";
 
 export async function POST(req: Request) {
 	const { CLERK_WEBHOOK_SECRET } = env;
@@ -66,9 +67,19 @@ export async function POST(req: Request) {
 
 			try {
 				if (evt.type === "user.created") {
+					const id = randomUUID();
+					const customer = await stripe.customers.create({
+						name: data.fullName,
+						email: data.email,
+						metadata: {
+							userId: id,
+							clerkId: data.clerkId,
+						},
+					});
 					await db.insert(usersTable).values({
-						id: randomUUID(),
+						id,
 						clerkId: data.clerkId,
+						stripeId: customer.id,
 						fullName: data.fullName,
 						email: data.email,
 						avatarUrl: data.avatarUrl,
