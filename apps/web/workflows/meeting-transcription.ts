@@ -1,4 +1,4 @@
-import { processAllTranscriptions } from "@/server/transcriptions/transcribe-chunk";
+import { processAllTranscriptions } from "@/lib/transcriptions/transcribe-chunk";
 
 async function transcribeMeetingStep(meetingId: string) {
 	"use step";

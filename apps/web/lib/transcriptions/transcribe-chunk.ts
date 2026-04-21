@@ -4,7 +4,7 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { generateText } from "ai";
 import { and, asc, eq, isNotNull, isNull } from "drizzle-orm";
 
-import { getCloudflareModel } from "@/server/ai/cloudflare-provider";
+import { getCloudflareModel } from "@/lib/ai/cloudflare-provider";
 import { db } from "@/server/db";
 import { meetingsTable } from "@/server/db/schema/meetings";
 import { objectsTable } from "@/server/db/schema/objects";
@@ -200,7 +200,7 @@ export async function processAllTranscriptions(
 	}
 
 	const { generateAndSaveMeetingSummary } = await import(
-		"@/server/ai/generate-meeting-summary"
+		"@/lib/ai/generate-meeting-summary"
 	);
 	await generateAndSaveMeetingSummary(meetingId, content).catch((err) => {
 		console.error("Meeting summary generation error:", err);

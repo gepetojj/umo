@@ -10,9 +10,9 @@ import {
 	ConversationEmptyState,
 } from "@/components/ai-elements/conversation";
 import { Button } from "@/components/ui/button";
+import { useMeetings } from "@/hooks/use-meetings";
 import { useRecorder } from "@/hooks/use-recorder";
-import { clearChunksForMeeting } from "@/lib/db";
-import { useMeetings } from "@/lib/use-meetings";
+import { clearChunksForMeeting } from "@/lib/indexed-db";
 import { updateMeetingDuration } from "@/server/actions/meetings/update-meeting-duration";
 
 function formatDuration(seconds: number) {

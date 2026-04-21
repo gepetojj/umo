@@ -3,8 +3,8 @@ import { eq } from "drizzle-orm";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 
+import { getCloudflareModel } from "@/lib/ai/cloudflare-provider";
 import { getTranscriptionContent } from "@/server/actions/meetings/get-transcription-content";
-import { getCloudflareModel } from "@/server/ai/cloudflare-provider";
 import { db } from "@/server/db";
 import { meetingMessagesTable } from "@/server/db/schema/meeting-messages";
 

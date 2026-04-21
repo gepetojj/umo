@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { generateText } from "ai";
 import { eq } from "drizzle-orm";
 
-import { getCloudflareModel } from "@/server/ai/cloudflare-provider";
+import { getCloudflareModel } from "@/lib/ai/cloudflare-provider";
 import { db } from "@/server/db";
 import { meetingMessagesTable } from "@/server/db/schema/meeting-messages";
 

@@ -8,7 +8,6 @@ import {
 } from "lucide-react";
 
 import { Spinner } from "@/components/ui/spinner";
-import type { MeetingForDisplay } from "@/lib/meetings";
 import { cn } from "@/lib/utils";
 
 function formatDuration(seconds: number) {
@@ -83,7 +82,16 @@ function stepRowBg(status: StepStatus) {
 }
 
 interface MeetingContextCardProps {
-	meeting: MeetingForDisplay;
+	meeting: {
+		id: string;
+		title: string;
+		durationSeconds: number;
+		createdAt: number;
+		/** ID da transcrição final quando disponível (null = ainda não transcrito). */
+		transcriptionId?: string | null;
+		/** true quando há gravação mas ainda não há transcrição. */
+		transcriptionPending?: boolean;
+	};
 	audioUrl: string | null;
 	recordingFailed?: boolean;
 	/** Quando true, o passo "Transcrição" é exibido como falha (não como em progresso). */

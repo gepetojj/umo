@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { addChunk } from "@/lib/db";
+import { addChunk } from "@/lib/indexed-db";
 import { uploadChunk } from "@/server/actions/objects/upload-chunk";
 
 const TIMESLICE_MS = 10_000;

@@ -2,7 +2,7 @@ import { type OpenAIProvider } from "@ai-sdk/openai";
 import { createAiGateway } from "ai-gateway-provider";
 import { createUnified } from "ai-gateway-provider/providers/unified";
 
-import { env } from "../env";
+import { env } from "../../server/env";
 
 const CLOUDFLARE_AI_MODEL_ID = "workers-ai/@cf/openai/gpt-oss-20b" as const;
 

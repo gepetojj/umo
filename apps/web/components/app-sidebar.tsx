@@ -34,7 +34,7 @@ import {
 	useSidebar,
 } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useMeetings } from "@/lib/use-meetings";
+import { useMeetings } from "@/hooks/use-meetings";
 
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 

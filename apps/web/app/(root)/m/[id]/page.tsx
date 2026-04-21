@@ -28,8 +28,8 @@ import {
 } from "@/components/ai-elements/prompt-input";
 import { MeetingContextCard } from "@/components/meeting-context-card";
 import { Button } from "@/components/ui/button";
-import { getRecordingBlob } from "@/lib/db";
-import { meetingsQueryKey } from "@/lib/use-meetings";
+import { meetingsQueryKey } from "@/hooks/use-meetings";
+import { getRecordingBlob } from "@/lib/indexed-db";
 import { getMeeting } from "@/server/actions/meetings/get-meeting";
 import { getMeetingMessages } from "@/server/actions/meetings/get-meeting-messages";
 import { processTranscriptions } from "@/server/actions/transcriptions/process-transcriptions";
