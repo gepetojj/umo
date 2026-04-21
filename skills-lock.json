@@ -16,6 +16,11 @@
 			"sourceType": "github",
 			"computedHash": "063a0e6448123cd359ad0044cc46b0e490cc7964d45ef4bb9fd842bd2ffbca67"
 		},
+		"react-email": {
+			"source": "resend/react-email",
+			"sourceType": "github",
+			"computedHash": "dc8823cae35b2650f5ca0aa56a806b724cfd92118b68a561d29d99f138fee8d2"
+		},
 		"safe-action-advanced": {
 			"source": "next-safe-action/skills",
 			"sourceType": "github",

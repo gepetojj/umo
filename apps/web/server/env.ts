@@ -13,6 +13,8 @@ export const env = z
 
 		CLOUDFLARE_ACCOUNT_ID: z.string(),
 		CLOUDFLARE_AIG_API_KEY: z.string(),
+		CLOUDFLARE_EMAIL_API_KEY: z.string(),
+		TRANSACTIONAL_EMAIL_FROM: z.string(),
 
 		CLERK_SECRET_KEY: z.string(),
 		CLERK_WEBHOOK_SECRET: z.string(),

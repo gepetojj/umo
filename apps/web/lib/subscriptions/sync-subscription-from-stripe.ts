@@ -5,6 +5,7 @@ import type Stripe from "stripe";
 
 import { findSeatsSubscriptionItem } from "@/lib/billing/stripe-subscription-items";
 import { syncStripeSeatQuantityForWorkspaceOwner } from "@/lib/billing/sync-seat-billing";
+import { sendSubscriptionThankYouEmail } from "@/lib/email/send-subscription-thank-you";
 import { getPlanIdFromPriceId, type PlanId } from "@/lib/plans";
 import { ensureWorkspaceWithOwnerMember } from "@/lib/workspace/ensure-workspace";
 import { db } from "@/server/db";
@@ -24,6 +25,10 @@ function inferPlanFromStripeSubscription(
 		if (p === "starter") starter = "starter";
 	}
 	return starter;
+}
+
+function isSubscriptionLiveStatus(status: string) {
+	return status === "active" || status === "trialing";
 }
 
 export async function syncSubscriptionFromStripe(
@@ -62,6 +67,16 @@ export async function syncSubscriptionFromStripe(
 		seatsItemId = null;
 	}
 
+	const [existingSubscription] = await db
+		.select()
+		.from(subscriptionsTable)
+		.where(eq(subscriptionsTable.stripeSubscriptionId, subscription.id))
+		.limit(1);
+
+	const wasLive = existingSubscription
+		? isSubscriptionLiveStatus(existingSubscription.status)
+		: false;
+
 	const row = {
 		stripeSubscriptionId: subscription.id,
 		userId: user.id,
@@ -95,6 +110,19 @@ export async function syncSubscriptionFromStripe(
 				updatedAt: new Date(),
 			},
 		});
+
+	const isLive = isSubscriptionLiveStatus(subscription.status);
+	if (plan && isLive && !wasLive) {
+		try {
+			await sendSubscriptionThankYouEmail({
+				to: user.email,
+				fullName: user.fullName,
+				planId: plan,
+			});
+		} catch (err) {
+			console.error("[email] subscription thank-you failed:", err);
+		}
+	}
 
 	if (plan === "gold") {
 		await ensureWorkspaceWithOwnerMember(user.id);

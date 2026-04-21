@@ -5,6 +5,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { and, eq, isNull } from "drizzle-orm";
 
 import { getAppBaseUrl } from "@/lib/app-base-url";
+import { sendWorkspaceInviteEmail } from "@/lib/email/send-workspace-invite";
 import { normalizeEmail } from "@/lib/normalize-email";
 import { requireWorkspaceOwner } from "@/lib/workspace/guards";
 import { AuthError, authActionClient } from "@/server/actions/safe-action";
@@ -14,6 +15,7 @@ import { usersTable } from "@/server/db/schema/users";
 import {
 	workspaceInvitationsTable,
 	workspaceMembersTable,
+	workspacesTable,
 } from "@/server/db/schema/workspaces";
 
 export const inviteWorkspaceMemberAction = authActionClient
@@ -49,6 +51,14 @@ export const inviteWorkspaceMemberAction = authActionClient
 				),
 			);
 
+		const [workspaceRow] = await db
+			.select({ name: workspacesTable.name })
+			.from(workspacesTable)
+			.where(eq(workspacesTable.id, wctx.workspaceId))
+			.limit(1);
+
+		const workspaceName = workspaceRow?.name?.trim() || "Workspace no Umo";
+
 		const token = randomBytes(24).toString("hex");
 		const id = randomUUID();
 		const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -64,6 +74,18 @@ export const inviteWorkspaceMemberAction = authActionClient
 		});
 
 		const joinUrl = `${getAppBaseUrl()}/workspace/join/${token}`;
+
+		try {
+			await sendWorkspaceInviteEmail({
+				to: email,
+				inviterName: ctx.user.fullName,
+				inviterEmail: ctx.user.email,
+				workspaceName,
+				acceptInviteUrl: joinUrl,
+			});
+		} catch (err) {
+			console.error("[email] workspace invite failed:", err);
+		}
 
 		return { joinUrl };
 	});
