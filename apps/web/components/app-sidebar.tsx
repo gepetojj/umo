@@ -4,6 +4,7 @@ import { useAuth, useUser } from "@clerk/nextjs";
 import {
 	BadgeCheck,
 	ChevronsUpDown,
+	CreditCard,
 	LogOut,
 	MessageSquarePlusIcon,
 	MicIcon,
@@ -194,6 +195,12 @@ export function AppSidebar() {
 										<Link href="/account">
 											<BadgeCheck />
 											Conta
+										</Link>
+									</DropdownMenuItem>
+									<DropdownMenuItem asChild>
+										<Link href="/billing">
+											<CreditCard />
+											Minha assinatura
 										</Link>
 									</DropdownMenuItem>
 								</DropdownMenuGroup>

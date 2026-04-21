@@ -1,14 +1,10 @@
 import { headers } from "next/headers";
+import type Stripe from "stripe";
 
+import { syncSubscriptionFromStripe } from "@/lib/subscriptions/sync-subscription-from-stripe";
 import { tryCatch } from "@/lib/try";
 import { env } from "@/server/env";
 import { stripe } from "@/server/stripe";
-
-export const config = {
-	api: {
-		bodyParser: false,
-	},
-};
 
 export async function POST(req: Request) {
 	const { STRIPE_WEBHOOK_SECRET } = env;
@@ -17,16 +13,12 @@ export async function POST(req: Request) {
 	const signature = headerPayload.get("stripe-signature");
 
 	if (!signature) {
-		return new Response("Error occured -- no stripe signature", {
-			status: 400,
-		});
+		return new Response("Missing stripe-signature", { status: 400 });
 	}
 
 	const payload = await req.text();
 	if (!payload) {
-		return new Response("Error occured -- no payload", {
-			status: 400,
-		});
+		return new Response("Missing payload", { status: 400 });
 	}
 
 	const [event, eventParsingError] = await tryCatch(
@@ -38,33 +30,43 @@ export async function POST(req: Request) {
 	);
 	if (eventParsingError) {
 		console.error(`[stripe] Error parsing event:`, eventParsingError);
-		return new Response("Error occured -- failed to parse event", {
-			status: 400,
-		});
+		return new Response("Invalid signature", { status: 400 });
 	}
 
-	switch (event.type) {
-		case "customer.subscription.created": {
-			const _subscription = event.data.object;
-			break;
-		}
+	try {
+		switch (event.type) {
+			case "customer.subscription.created":
+			case "customer.subscription.updated":
+			case "customer.subscription.deleted": {
+				await syncSubscriptionFromStripe(
+					event.data.object as Stripe.Subscription,
+				);
+				break;
+			}
 
-		case "customer.subscription.updated": {
-			const _subscription = event.data.object;
-			break;
-		}
+			case "checkout.session.completed": {
+				const session = event.data.object as Stripe.Checkout.Session;
+				if (session.mode !== "subscription" || !session.subscription) {
+					break;
+				}
+				const subId =
+					typeof session.subscription === "string"
+						? session.subscription
+						: session.subscription.id;
+				const full = await stripe.subscriptions.retrieve(subId);
+				await syncSubscriptionFromStripe(full);
+				break;
+			}
 
-		case "customer.subscription.deleted": {
-			const _subscription = event.data.object;
-			break;
+			default: {
+				console.error(`[stripe] Unhandled event type: ${event.type}`);
+				break;
+			}
 		}
-
-		default: {
-			return new Response("Error occured -- unknown event type", {
-				status: 406,
-			});
-		}
+	} catch (err) {
+		console.error("[stripe] Webhook handler error:", err);
+		return new Response("Webhook handler failed", { status: 500 });
 	}
 
-	return new Response("OK", { status: 200 });
+	return new Response(null, { status: 200 });
 }

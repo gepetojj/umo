@@ -7,7 +7,7 @@ import { getActiveSubscription } from "@/lib/subscriptions/get-active-subscripti
 import { db } from "@/server/db";
 import { usersTable } from "@/server/db/schema/users";
 
-class AuthError extends Error {
+export class AuthError extends Error {
 	constructor(message: string) {
 		super(message);
 		this.name = "AuthError";
