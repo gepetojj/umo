@@ -1,11 +1,13 @@
 packages:
-  - packages/*
-  - apps/*
-  - apps/workers/*
+    - packages/*
+    - apps/*
+    - apps/workers/*
 
 onlyBuiltDependencies:
-  - '@clerk/shared'
-  - esbuild
-  - sharp
-  - unrs-resolver
-  - workerd
+    - "@clerk/shared"
+    - "@swc/core"
+    - cbor-extract
+    - esbuild
+    - sharp
+    - unrs-resolver
+    - workerd
