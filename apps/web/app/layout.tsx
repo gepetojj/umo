@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
+import { Analytics } from "@vercel/analytics/next";
 import clsx from "clsx/lite";
 
 import { PWARegister } from "@/components/pwa-register";
@@ -42,6 +43,7 @@ export default function RootLayout({
 					<PWARegister />
 					<QueryProvider>{children}</QueryProvider>
 					<GoogleOneTap />
+					<Analytics />
 				</body>
 			</html>
 		</ClerkProvider>
