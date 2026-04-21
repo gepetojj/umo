@@ -2,9 +2,10 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { createMeeting } from "@/server/actions/meetings/create-meeting";
-import { getMeetings } from "@/server/actions/meetings/get-meetings";
-import { updateMeetingTitle } from "@/server/actions/meetings/update-meeting-title";
+import { unwrapSafeActionResult } from "@/lib/unwrap-safe-action-result";
+import { createMeetingAction } from "@/server/actions/meetings/create-meeting.action";
+import { getMeetingsAction } from "@/server/actions/meetings/get-meetings.action";
+import { updateMeetingTitleAction } from "@/server/actions/meetings/update-meeting-title.action";
 
 export const meetingsQueryKey = ["meetings"] as const;
 
@@ -17,17 +18,21 @@ export function useMeetings() {
 		refetch: refresh,
 	} = useQuery({
 		queryKey: meetingsQueryKey,
-		queryFn: getMeetings,
+		queryFn: async () => unwrapSafeActionResult(await getMeetingsAction()),
 	});
 
 	const addMeeting = async (title: string) => {
-		const { id } = await createMeeting(title);
+		const { id } = unwrapSafeActionResult(
+			await createMeetingAction({ title }),
+		);
 		await queryClient.invalidateQueries({ queryKey: meetingsQueryKey });
 		return id;
 	};
 
 	const updateTitle = async (meetingId: string, title: string) => {
-		await updateMeetingTitle(meetingId, title);
+		unwrapSafeActionResult(
+			await updateMeetingTitleAction({ meetingId, title }),
+		);
 		await queryClient.invalidateQueries({ queryKey: meetingsQueryKey });
 	};
 

@@ -16,6 +16,51 @@
 			"sourceType": "github",
 			"computedHash": "063a0e6448123cd359ad0044cc46b0e490cc7964d45ef4bb9fd842bd2ffbca67"
 		},
+		"safe-action-advanced": {
+			"source": "next-safe-action/skills",
+			"sourceType": "github",
+			"computedHash": "e58443ca9ce48be68aaed5adcca81b35dff7d3590188bfaa5ffedbef62ade2f4"
+		},
+		"safe-action-better-auth": {
+			"source": "next-safe-action/skills",
+			"sourceType": "github",
+			"computedHash": "b6bf6eb0633bab2214890915e0c513509105a8e1a1b5656fe99321a8f09d25fa"
+		},
+		"safe-action-client": {
+			"source": "next-safe-action/skills",
+			"sourceType": "github",
+			"computedHash": "dd14193532532bd15905ea14e2656643c6dbef797334cf1728e0ebf0034c6c80"
+		},
+		"safe-action-forms": {
+			"source": "next-safe-action/skills",
+			"sourceType": "github",
+			"computedHash": "62d8ccbd47b01c0e9cd78301a963c1b304ebfc8473178d27b97076ade0ef739d"
+		},
+		"safe-action-hooks": {
+			"source": "next-safe-action/skills",
+			"sourceType": "github",
+			"computedHash": "795fa82263e41acdcb06a1e3fa707c6e5571638f78c2fdf3d1b1c31410c5535c"
+		},
+		"safe-action-middleware": {
+			"source": "next-safe-action/skills",
+			"sourceType": "github",
+			"computedHash": "41aeb838f3887efb9ee231598516c6380abffd112b7e513bca23ed2ef66d6c2c"
+		},
+		"safe-action-tanstack-query": {
+			"source": "next-safe-action/skills",
+			"sourceType": "github",
+			"computedHash": "733364d3bb6f042c382c8a06e28c0745f9cae9dc43f717d55bd81e292b6f0781"
+		},
+		"safe-action-testing": {
+			"source": "next-safe-action/skills",
+			"sourceType": "github",
+			"computedHash": "ca3760d8921f7179891744f4c9dc55ad805e537c2f16e8b81e21b01fa432d839"
+		},
+		"safe-action-validation-errors": {
+			"source": "next-safe-action/skills",
+			"sourceType": "github",
+			"computedHash": "98cd9da8b23ff0211fc02066dcc89c1414d2f0d5b9e438655d7eab29b6417c86"
+		},
 		"stripe-best-practices": {
 			"source": "stripe/ai",
 			"sourceType": "github",

@@ -13,7 +13,8 @@ import { Button } from "@/components/ui/button";
 import { useMeetings } from "@/hooks/use-meetings";
 import { useRecorder } from "@/hooks/use-recorder";
 import { clearChunksForMeeting } from "@/lib/indexed-db";
-import { updateMeetingDuration } from "@/server/actions/meetings/update-meeting-duration";
+import { unwrapSafeActionResult } from "@/lib/unwrap-safe-action-result";
+import { updateMeetingDurationAction } from "@/server/actions/meetings/update-meeting-duration.action";
 
 function formatDuration(seconds: number) {
 	const m = Math.floor(seconds / 60);
@@ -53,7 +54,13 @@ export default function NewMeetingPage() {
 		setCurrentMeetingId(null);
 		if (!id) return;
 
-		await updateMeetingDuration(id, duration, totalChunks);
+		unwrapSafeActionResult(
+			await updateMeetingDurationAction({
+				meetingId: id,
+				durationSeconds: duration,
+				totalChunks,
+			}),
+		);
 		await clearChunksForMeeting(id);
 
 		router.push(`/m/${id}`);

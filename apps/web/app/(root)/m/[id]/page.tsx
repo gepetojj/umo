@@ -6,6 +6,7 @@ import type { UIMessage } from "ai";
 import { DefaultChatTransport } from "ai";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import type { InferSafeActionFnResult } from "next-safe-action";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
@@ -30,10 +31,11 @@ import { MeetingContextCard } from "@/components/meeting-context-card";
 import { Button } from "@/components/ui/button";
 import { meetingsQueryKey } from "@/hooks/use-meetings";
 import { getRecordingBlob } from "@/lib/indexed-db";
-import { getMeeting } from "@/server/actions/meetings/get-meeting";
-import { getMeetingMessages } from "@/server/actions/meetings/get-meeting-messages";
-import { processTranscriptions } from "@/server/actions/transcriptions/process-transcriptions";
-import { getWorkflowRunStatus } from "@/server/actions/workflows/get-workflow-run-status";
+import { unwrapSafeActionResult } from "@/lib/unwrap-safe-action-result";
+import { getMeetingAction } from "@/server/actions/meetings/get-meeting.action";
+import { getMeetingMessagesAction } from "@/server/actions/meetings/get-meeting-messages.action";
+import { processTranscriptionsAction } from "@/server/actions/transcriptions/process-transcriptions.action";
+import { getWorkflowRunStatusAction } from "@/server/actions/workflows/get-workflow-run-status.action";
 
 const MEETING_SUGGESTIONS = [
 	"Quais foram os principais pontos discutidos?",
@@ -42,12 +44,15 @@ const MEETING_SUGGESTIONS = [
 	"Houve algum bloqueio ou dúvida pendente?",
 ];
 
+type MeetingView = Extract<
+	InferSafeActionFnResult<typeof getMeetingAction>,
+	{ data: unknown }
+>["data"];
+
 export default function MeetingChatPage() {
 	const params = useParams();
 	const id = typeof params.id === "string" ? params.id : null;
-	const [meeting, setMeeting] = useState<Awaited<
-		ReturnType<typeof getMeeting>
-	> | null>(null);
+	const [meeting, setMeeting] = useState<MeetingView | null>(null);
 	const [initialMessages, setInitialMessages] = useState<UIMessage[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -65,7 +70,9 @@ export default function MeetingChatPage() {
 
 	const refetchMeeting = useCallback(async () => {
 		if (!id) return;
-		const m = await getMeeting(id);
+		const m = unwrapSafeActionResult(
+			await getMeetingAction({ meetingId: id }),
+		);
 		setMeeting(m ?? null);
 	}, [id]);
 
@@ -80,15 +87,21 @@ export default function MeetingChatPage() {
 			return;
 		}
 		let cancelled = false;
-		Promise.all([getMeeting(id), getMeetingMessages(id)]).then(
-			([m, messages]) => {
-				if (!cancelled) {
-					setMeeting(m ?? null);
-					setInitialMessages(messages);
-				}
-				setLoading(false);
-			},
-		);
+		void (async () => {
+			const [m, messages] = await Promise.all([
+				unwrapSafeActionResult(
+					await getMeetingAction({ meetingId: id }),
+				),
+				unwrapSafeActionResult(
+					await getMeetingMessagesAction({ meetingId: id }),
+				),
+			]);
+			if (!cancelled) {
+				setMeeting(m ?? null);
+				setInitialMessages(messages);
+			}
+			setLoading(false);
+		})();
 		return () => {
 			cancelled = true;
 		};
@@ -117,10 +130,11 @@ export default function MeetingChatPage() {
 		transcriptionTriggeredRef.current = true;
 		setTranscriptionError(null);
 		setTranscriptionQueued(true);
-		processTranscriptions({ meetingId: id })
+		processTranscriptionsAction({ meetingId: id })
 			.then((res) => {
 				if (cancelled) return;
-				setTranscriptionRunId(res.runId);
+				const { runId } = unwrapSafeActionResult(res);
+				setTranscriptionRunId(runId);
 				return refetchMeeting();
 			})
 			.catch((e) => {
@@ -158,8 +172,11 @@ export default function MeetingChatPage() {
 
 		const tick = async () => {
 			try {
-				const { status } =
-					await getWorkflowRunStatus(transcriptionRunId);
+				const { status } = unwrapSafeActionResult(
+					await getWorkflowRunStatusAction({
+						runId: transcriptionRunId,
+					}),
+				);
 				if (cancelled) return;
 				const s = String(status).toLowerCase();
 				if (s === "failed" || s === "cancelled" || s === "terminated") {
@@ -202,7 +219,9 @@ export default function MeetingChatPage() {
 		const interval = setInterval(async () => {
 			await refetchMeeting();
 			// Recarrega mensagens quando transcrição fica pronta (resumo pode ter sido gerado)
-			const msgs = await getMeetingMessages(id);
+			const msgs = unwrapSafeActionResult(
+				await getMeetingMessagesAction({ meetingId: id }),
+			);
 			setInitialMessages(msgs);
 		}, 4000);
 		return () => clearInterval(interval);
@@ -365,9 +384,11 @@ export default function MeetingChatPage() {
 							setTranscriptionError(null);
 							setTranscriptionQueued(true);
 							transcriptionTriggeredRef.current = true;
-							processTranscriptions({ meetingId: id })
+							processTranscriptionsAction({ meetingId: id })
 								.then((res) => {
-									setTranscriptionRunId(res.runId);
+									const { runId } =
+										unwrapSafeActionResult(res);
+									setTranscriptionRunId(runId);
 									return refetchMeeting();
 								})
 								.catch((e) => {

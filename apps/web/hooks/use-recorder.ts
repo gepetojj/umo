@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { addChunk } from "@/lib/indexed-db";
-import { uploadChunk } from "@/server/actions/objects/upload-chunk";
+import { unwrapSafeActionResult } from "@/lib/unwrap-safe-action-result";
+import { uploadChunkAction } from "@/server/actions/objects/upload-chunk.action";
 
 const TIMESLICE_MS = 10_000;
 const MIME_TYPES = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg"];
@@ -76,11 +77,13 @@ export function useRecorder() {
 					// uploadChunk only does S3 + DB (fast), no transcription.
 					const promise = (async () => {
 						await addChunk(meetingId, index, e.data);
-						const formData = new FormData();
-						formData.set("meetingId", meetingId);
-						formData.set("chunkIndex", String(index));
-						formData.set("chunk", e.data);
-						await uploadChunk(formData);
+						unwrapSafeActionResult(
+							await uploadChunkAction({
+								meetingId,
+								chunkIndex: index,
+								chunk: e.data,
+							}),
+						);
 					})();
 
 					pendingUploadsRef.current.push(promise);

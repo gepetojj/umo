@@ -4,7 +4,8 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 
 import { getCloudflareModel } from "@/lib/ai/cloudflare-provider";
-import { getTranscriptionContent } from "@/server/actions/meetings/get-transcription-content";
+import { unwrapSafeActionResult } from "@/lib/unwrap-safe-action-result";
+import { getTranscriptionContentAction } from "@/server/actions/meetings/get-transcription-content.action";
 import { db } from "@/server/db";
 import { meetingMessagesTable } from "@/server/db/schema/meeting-messages";
 
@@ -53,7 +54,9 @@ export async function POST(req: NextRequest) {
 		}
 	}
 
-	const transcriptionContent = await getTranscriptionContent(meetingId);
+	const transcriptionContent = unwrapSafeActionResult(
+		await getTranscriptionContentAction({ meetingId }),
+	);
 	const systemPrompt = `
 <identity>
 Você é um assistente de IA especializado em auxiliar usuários sobre reuniões/conversas.

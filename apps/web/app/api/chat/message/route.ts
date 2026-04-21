@@ -1,7 +1,8 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 
-import { saveMeetingMessage } from "@/server/actions/meetings/save-meeting-message";
+import { unwrapSafeActionResult } from "@/lib/unwrap-safe-action-result";
+import { saveMeetingMessageAction } from "@/server/actions/meetings/save-meeting-message.action";
 
 const bodySchema = z.object({
 	meetingId: z.string().uuid(),
@@ -26,9 +27,11 @@ export async function POST(req: NextRequest) {
 		);
 	}
 
-	const result = await saveMeetingMessage(
-		body.meetingId,
-		body.message as never,
+	unwrapSafeActionResult(
+		await saveMeetingMessageAction({
+			meetingId: body.meetingId,
+			message: body.message,
+		}),
 	);
-	return Response.json(result);
+	return Response.json({ ok: true });
 }
