@@ -22,5 +22,6 @@ export const env = z
 		STRIPE_WEBHOOK_SECRET: z.string(),
 		STRIPE_STARTER_PRICE_ID: z.string(),
 		STRIPE_GOLD_PRICE_ID: z.string(),
+		STRIPE_SEATS_PRICE_ID: z.string(),
 	})
 	.parse(process.env);

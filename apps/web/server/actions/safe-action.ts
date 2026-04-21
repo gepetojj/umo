@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { createSafeActionClient } from "next-safe-action";
 import { ZodError } from "zod";
 
+import { getEntitlementsForPlan } from "@/lib/entitlements";
 import { getActiveSubscription } from "@/lib/subscriptions/get-active-subscription";
 import { db } from "@/server/db";
 import { usersTable } from "@/server/db/schema/users";
@@ -57,9 +58,17 @@ export const paidActionClient = authActionClient.use(
 		const subscription = await getActiveSubscription(user.id);
 		if (!subscription) throw new AuthError("No active subscription");
 
+		const plan = subscription.plan;
+		if (plan !== "starter" && plan !== "gold") {
+			throw new AuthError("No active subscription");
+		}
+
+		const entitlements = getEntitlementsForPlan(plan);
+
 		return next({
 			ctx: {
 				subscription,
+				entitlements,
 			},
 		});
 	},

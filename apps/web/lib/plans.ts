@@ -7,6 +7,7 @@ export type PlanDefinition = {
 	id: PlanId;
 	name: string;
 	tagline: string;
+	/** Fallback quando o preço ainda não foi carregado da Stripe. */
 	priceLabel: string;
 	/** Display order / upgrade rank — higher means more capable. */
 	tier: number;
@@ -15,16 +16,18 @@ export type PlanDefinition = {
 };
 
 const starterFeatures = [
+	"Uso individual — só a sua conta, sem workspace de equipe",
 	"Transcrição e resumos com IA",
-	"Histórico de reuniões",
-	"Exportação do contexto da reunião",
+	"Histórico das suas reuniões",
+	"Exportação da transcrição (WebVTT)",
 ];
 
 const goldFeatures = [
-	"Tudo do Starter",
-	"Prioridade no processamento",
-	"Suporte prioritário",
-	"Mais folga para equipes que vivem de reuniões",
+	"Workspace de equipe por convite — até 5 pessoas inclusas; depois, R$ 50 por vaga extra",
+	"Transcrição e resumos com IA",
+	"Histórico compartilhado no workspace",
+	"Exportação da transcrição (WebVTT)",
+	"Prioridade no processamento e suporte dedicado",
 ];
 
 export function getPlanDefinitions(): PlanDefinition[] {
@@ -32,7 +35,8 @@ export function getPlanDefinitions(): PlanDefinition[] {
 		{
 			id: "starter",
 			name: "Starter",
-			tagline: "Para equipes que querem registrar e sintetizar reuniões.",
+			tagline:
+				"Para quem trabalha sozinho e quer cada reunião registrada com clareza.",
 			priceLabel: "Cobrança mensal",
 			tier: 1,
 			features: starterFeatures,
@@ -40,7 +44,8 @@ export function getPlanDefinitions(): PlanDefinition[] {
 		{
 			id: "gold",
 			name: "Gold",
-			tagline: "Para quem precisa de mais capacidade e prioridade.",
+			tagline:
+				"Para equipes que precisam de um espaço único, convites e prioridade.",
 			priceLabel: "Cobrança mensal",
 			tier: 2,
 			features: goldFeatures,

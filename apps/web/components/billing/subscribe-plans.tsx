@@ -7,6 +7,7 @@ import { useCallback, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import type { PlanPriceDisplay } from "@/lib/billing/fetch-plan-prices";
 import type { PlanDefinition, PlanId } from "@/lib/plans";
 import type { BillingOverviewClient } from "@/lib/subscriptions/billing-overview";
 import { changeSubscriptionPlanAction } from "@/server/actions/billing/change-subscription-plan.action";
@@ -14,9 +15,10 @@ import { createCheckoutSessionAction } from "@/server/actions/billing/create-che
 
 type SubscribePlansProps = {
 	overview: BillingOverviewClient;
+	planPrices: Partial<Record<PlanId, PlanPriceDisplay>>;
 };
 
-export function SubscribePlans({ overview }: SubscribePlansProps) {
+export function SubscribePlans({ overview, planPrices }: SubscribePlansProps) {
 	const router = useRouter();
 	const [pendingPlan, setPendingPlan] = useState<PlanId | null>(null);
 	const [error, setError] = useState<string | null>(null);
@@ -120,10 +122,10 @@ export function SubscribePlans({ overview }: SubscribePlansProps) {
 					</p>
 					{overview.canUpgrade ? (
 						<p className="mx-auto max-w-2xl rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-amber-950 text-sm sm:mx-0 dark:bg-amber-500/10 dark:text-amber-50">
-							Você está no <strong>Starter</strong>. O{" "}
-							<strong>Gold</strong> oferece prioridade no
-							processamento e um suporte dedicado para ir mais
-							longe.
+							Você está no <strong>Starter</strong> (uso
+							individual). O <strong>Gold</strong> inclui um
+							workspace para equipe com até cinco pessoas no preço
+							base, convites e prioridade no suporte.
 						</p>
 					) : null}
 					<div className="flex flex-wrap items-center justify-center gap-3 sm:justify-start">
@@ -147,6 +149,7 @@ export function SubscribePlans({ overview }: SubscribePlansProps) {
 						const cta = resolveCta(plan);
 						const isGold = plan.highlighted;
 						const busy = pendingPlan === plan.id;
+						const price = planPrices[plan.id];
 
 						return (
 							<div
@@ -162,18 +165,36 @@ export function SubscribePlans({ overview }: SubscribePlansProps) {
 										Mais popular
 									</span>
 								) : null}
-								<div className="mb-4 flex flex-col gap-1">
+								<div className="mb-2 flex flex-col gap-2">
 									<h2 className="font-semibold text-2xl tracking-tight">
 										{plan.name}
 									</h2>
 									<p className="text-muted-foreground text-sm leading-relaxed">
 										{plan.tagline}
 									</p>
-									<p className="pt-2 font-medium text-foreground text-sm">
-										{plan.priceLabel}
-									</p>
+									<div className="mt-3 border-border/60 border-t pt-4">
+										{price ? (
+											<div>
+												<p className="font-semibold text-3xl tabular-nums tracking-tight">
+													{price.formattedAmount}
+													<span className="font-normal text-lg text-muted-foreground">
+														{" "}
+														{price.billingCadence}
+													</span>
+												</p>
+												<p className="mt-1 text-muted-foreground text-xs">
+													Cobrança recorrente; cancele
+													quando quiser.
+												</p>
+											</div>
+										) : (
+											<p className="font-medium text-foreground text-sm">
+												{plan.priceLabel}
+											</p>
+										)}
+									</div>
 								</div>
-								<ul className="mb-6 flex flex-1 flex-col gap-3">
+								<ul className="mb-6 flex flex-1 flex-col gap-3 pt-2">
 									{plan.features.map((f) => (
 										<li
 											key={f}
