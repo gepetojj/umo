@@ -1,4 +1,4 @@
-import z from "zod";
+import { z } from "zod";
 
 export const env = z
 	.object({
@@ -16,5 +16,11 @@ export const env = z
 
 		CLERK_SECRET_KEY: z.string(),
 		CLERK_WEBHOOK_SECRET: z.string(),
+
+		NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string(),
+		STRIPE_SECRET_KEY: z.string(),
+		STRIPE_WEBHOOK_SECRET: z.string(),
+		STRIPE_STARTER_PRICE_ID: z.string(),
+		STRIPE_GOLD_PRICE_ID: z.string(),
 	})
 	.parse(process.env);

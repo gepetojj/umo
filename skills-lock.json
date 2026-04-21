@@ -16,6 +16,11 @@
 			"sourceType": "github",
 			"computedHash": "063a0e6448123cd359ad0044cc46b0e490cc7964d45ef4bb9fd842bd2ffbca67"
 		},
+		"stripe-best-practices": {
+			"source": "stripe/ai",
+			"sourceType": "github",
+			"computedHash": "c89653e4f3a289ecdf1a51b3696ee7b18e172131c9803a981088c8d70536c85e"
+		},
 		"ui-ux-pro-max": {
 			"source": "nextlevelbuilder/ui-ux-pro-max-skill",
 			"sourceType": "github",

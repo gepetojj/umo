@@ -1,4 +1,7 @@
+import { relations } from "drizzle-orm";
 import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+
+import { subscriptionsTable } from "./subscriptions";
 
 export const usersTable = pgTable("users", {
 	id: uuid("id").primaryKey(),
@@ -12,3 +15,7 @@ export const usersTable = pgTable("users", {
 		.defaultNow()
 		.$onUpdate(() => new Date()),
 });
+
+export const usersRelations = relations(usersTable, ({ many }) => ({
+	subscriptions: many(subscriptionsTable),
+}));
