@@ -3,10 +3,28 @@ import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import type Stripe from "stripe";
 
-import { getPlanIdFromPriceId } from "@/lib/plans";
+import { findSeatsSubscriptionItem } from "@/lib/billing/stripe-subscription-items";
+import { syncStripeSeatQuantityForWorkspaceOwner } from "@/lib/billing/sync-seat-billing";
+import { getPlanIdFromPriceId, type PlanId } from "@/lib/plans";
+import { ensureWorkspaceWithOwnerMember } from "@/lib/workspace/ensure-workspace";
 import { db } from "@/server/db";
 import { subscriptionsTable } from "@/server/db/schema/subscriptions";
 import { usersTable } from "@/server/db/schema/users";
+import { stripe } from "@/server/stripe";
+
+function inferPlanFromStripeSubscription(
+	subscription: Stripe.Subscription,
+): PlanId | null {
+	let starter: PlanId | null = null;
+	for (const item of subscription.items.data) {
+		const pid = item.price?.id;
+		if (!pid) continue;
+		const p = getPlanIdFromPriceId(pid);
+		if (p === "gold") return "gold";
+		if (p === "starter") starter = "starter";
+	}
+	return starter;
+}
 
 export async function syncSubscriptionFromStripe(
 	subscription: Stripe.Subscription,
@@ -29,27 +47,33 @@ export async function syncSubscriptionFromStripe(
 		return;
 	}
 
-	const priceId = subscription.items.data[0]?.price?.id;
-	const plan = getPlanIdFromPriceId(priceId);
+	const plan = inferPlanFromStripeSubscription(subscription);
 	if (!plan) {
 		console.error(
-			`[stripe] syncSubscriptionFromStripe: unknown price id ${priceId}`,
+			`[stripe] syncSubscriptionFromStripe: could not infer plan from items`,
 		);
 		return;
 	}
 
-	const raw = subscription as unknown as {
-		current_period_start: number;
-		current_period_end: number;
-	};
+	let seatsItemId = findSeatsSubscriptionItem(subscription)?.id ?? null;
+	// Starter não deve ter add-on de vagas; remove linha órfã (ex.: portal Stripe).
+	if (plan === "starter" && seatsItemId) {
+		await stripe.subscriptionItems.del(seatsItemId);
+		seatsItemId = null;
+	}
 
 	const row = {
 		stripeSubscriptionId: subscription.id,
 		userId: user.id,
 		status: subscription.status,
 		plan,
-		periodStart: new Date(raw.current_period_start * 1000),
-		periodEnd: new Date(raw.current_period_end * 1000),
+		periodStart: new Date(
+			subscription.items.data[0].current_period_start * 1000,
+		),
+		periodEnd: new Date(
+			subscription.items.data[0].current_period_end * 1000,
+		),
+		stripeSeatsSubscriptionItemId: seatsItemId,
 	};
 
 	await db
@@ -66,7 +90,14 @@ export async function syncSubscriptionFromStripe(
 				plan: row.plan,
 				periodStart: row.periodStart,
 				periodEnd: row.periodEnd,
+				stripeSeatsSubscriptionItemId:
+					row.stripeSeatsSubscriptionItemId,
 				updatedAt: new Date(),
 			},
 		});
+
+	if (plan === "gold") {
+		await ensureWorkspaceWithOwnerMember(user.id);
+		await syncStripeSeatQuantityForWorkspaceOwner(user.id);
+	}
 }

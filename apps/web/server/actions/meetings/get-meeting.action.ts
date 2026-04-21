@@ -2,6 +2,7 @@
 
 import { and, asc, eq, isNull } from "drizzle-orm";
 
+import { userCanAccessMeeting } from "@/lib/workspace/meeting-access";
 import { meetingIdSchema } from "@/server/actions/meetings/schemas/meeting-id.schema";
 import { authActionClient } from "@/server/actions/safe-action";
 import { db } from "@/server/db";
@@ -11,13 +12,17 @@ import { transcriptionsTable } from "@/server/db/schema/transcriptions";
 
 export const getMeetingAction = authActionClient
 	.inputSchema(meetingIdSchema)
-	.action(async ({ parsedInput: { meetingId } }) => {
+	.action(async ({ ctx, parsedInput: { meetingId } }) => {
 		const [meeting] = await db
 			.select()
 			.from(meetingsTable)
 			.where(eq(meetingsTable.id, meetingId))
 			.limit(1);
 		if (!meeting) return null;
+
+		if (!(await userCanAccessMeeting(ctx.user.id, meeting))) {
+			return null;
+		}
 
 		const recordings = await db
 			.select({

@@ -1,0 +1,726 @@
+{
+	"id": "8fca03c2-b599-492e-9fb0-d310a30381ce",
+	"prevId": "faa5f9e8-97f3-430e-8350-f0d3c33d610a",
+	"version": "7",
+	"dialect": "postgresql",
+	"tables": {
+		"public.meeting_messages": {
+			"name": "meeting_messages",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "text",
+					"primaryKey": true,
+					"notNull": true
+				},
+				"meeting_id": {
+					"name": "meeting_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"role": {
+					"name": "role",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"parts": {
+					"name": "parts",
+					"type": "jsonb",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {
+				"meeting_messages_meeting_id_meetings_id_fk": {
+					"name": "meeting_messages_meeting_id_meetings_id_fk",
+					"tableFrom": "meeting_messages",
+					"tableTo": "meetings",
+					"columnsFrom": ["meeting_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": false
+		},
+		"public.meetings": {
+			"name": "meetings",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true
+				},
+				"title": {
+					"name": "title",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"duration_seconds": {
+					"name": "duration_seconds",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true,
+					"default": 0
+				},
+				"total_chunks": {
+					"name": "total_chunks",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"workspace_id": {
+					"name": "workspace_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"creator_user_id": {
+					"name": "creator_user_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"visibility": {
+					"name": "visibility",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "'workspace'"
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {
+				"meetings_workspace_id_workspaces_id_fk": {
+					"name": "meetings_workspace_id_workspaces_id_fk",
+					"tableFrom": "meetings",
+					"tableTo": "workspaces",
+					"columnsFrom": ["workspace_id"],
+					"columnsTo": ["id"],
+					"onDelete": "set null",
+					"onUpdate": "no action"
+				},
+				"meetings_creator_user_id_users_id_fk": {
+					"name": "meetings_creator_user_id_users_id_fk",
+					"tableFrom": "meetings",
+					"tableTo": "users",
+					"columnsFrom": ["creator_user_id"],
+					"columnsTo": ["id"],
+					"onDelete": "set null",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": false
+		},
+		"public.objects": {
+			"name": "objects",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true
+				},
+				"meeting_id": {
+					"name": "meeting_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"type": {
+					"name": "type",
+					"type": "object_type",
+					"typeSchema": "public",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "'recording'"
+				},
+				"key": {
+					"name": "key",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"size_bytes": {
+					"name": "size_bytes",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"content_type": {
+					"name": "content_type",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"chunk_index": {
+					"name": "chunk_index",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {
+				"objects_meeting_id_meetings_id_fk": {
+					"name": "objects_meeting_id_meetings_id_fk",
+					"tableFrom": "objects",
+					"tableTo": "meetings",
+					"columnsFrom": ["meeting_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": false
+		},
+		"public.subscriptions": {
+			"name": "subscriptions",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true
+				},
+				"stripe_subscription_id": {
+					"name": "stripe_subscription_id",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"stripe_seats_subscription_item_id": {
+					"name": "stripe_seats_subscription_item_id",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"user_id": {
+					"name": "user_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"status": {
+					"name": "status",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"plan": {
+					"name": "plan",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"period_start": {
+					"name": "period_start",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"period_end": {
+					"name": "period_end",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {
+				"subscriptions_user_id_users_id_fk": {
+					"name": "subscriptions_user_id_users_id_fk",
+					"tableFrom": "subscriptions",
+					"tableTo": "users",
+					"columnsFrom": ["user_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {
+				"subscriptions_stripe_subscription_id_unique": {
+					"name": "subscriptions_stripe_subscription_id_unique",
+					"nullsNotDistinct": false,
+					"columns": ["stripe_subscription_id"]
+				}
+			},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": false
+		},
+		"public.transcriptions": {
+			"name": "transcriptions",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true
+				},
+				"meeting_id": {
+					"name": "meeting_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"content": {
+					"name": "content",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"vtt": {
+					"name": "vtt",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"chunk_index": {
+					"name": "chunk_index",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"chunk_duration_ms": {
+					"name": "chunk_duration_ms",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {
+				"transcriptions_meeting_id_meetings_id_fk": {
+					"name": "transcriptions_meeting_id_meetings_id_fk",
+					"tableFrom": "transcriptions",
+					"tableTo": "meetings",
+					"columnsFrom": ["meeting_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": false
+		},
+		"public.users": {
+			"name": "users",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true
+				},
+				"clerk_id": {
+					"name": "clerk_id",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"stripe_id": {
+					"name": "stripe_id",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"full_name": {
+					"name": "full_name",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"email": {
+					"name": "email",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"avatar_url": {
+					"name": "avatar_url",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {
+				"users_clerk_id_unique": {
+					"name": "users_clerk_id_unique",
+					"nullsNotDistinct": false,
+					"columns": ["clerk_id"]
+				},
+				"users_stripe_id_unique": {
+					"name": "users_stripe_id_unique",
+					"nullsNotDistinct": false,
+					"columns": ["stripe_id"]
+				},
+				"users_email_unique": {
+					"name": "users_email_unique",
+					"nullsNotDistinct": false,
+					"columns": ["email"]
+				}
+			},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": false
+		},
+		"public.workspace_invitations": {
+			"name": "workspace_invitations",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true
+				},
+				"workspace_id": {
+					"name": "workspace_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"email": {
+					"name": "email",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"token": {
+					"name": "token",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"invited_by_user_id": {
+					"name": "invited_by_user_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"expires_at": {
+					"name": "expires_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"accepted_at": {
+					"name": "accepted_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {
+				"workspace_invitations_workspace_id_workspaces_id_fk": {
+					"name": "workspace_invitations_workspace_id_workspaces_id_fk",
+					"tableFrom": "workspace_invitations",
+					"tableTo": "workspaces",
+					"columnsFrom": ["workspace_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				},
+				"workspace_invitations_invited_by_user_id_users_id_fk": {
+					"name": "workspace_invitations_invited_by_user_id_users_id_fk",
+					"tableFrom": "workspace_invitations",
+					"tableTo": "users",
+					"columnsFrom": ["invited_by_user_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {
+				"workspace_invitations_token_unique": {
+					"name": "workspace_invitations_token_unique",
+					"nullsNotDistinct": false,
+					"columns": ["token"]
+				}
+			},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": false
+		},
+		"public.workspace_members": {
+			"name": "workspace_members",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true
+				},
+				"workspace_id": {
+					"name": "workspace_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"user_id": {
+					"name": "user_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"role": {
+					"name": "role",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				}
+			},
+			"indexes": {
+				"workspace_members_workspace_user_unique": {
+					"name": "workspace_members_workspace_user_unique",
+					"columns": [
+						{
+							"expression": "workspace_id",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						},
+						{
+							"expression": "user_id",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": true,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				}
+			},
+			"foreignKeys": {
+				"workspace_members_workspace_id_workspaces_id_fk": {
+					"name": "workspace_members_workspace_id_workspaces_id_fk",
+					"tableFrom": "workspace_members",
+					"tableTo": "workspaces",
+					"columnsFrom": ["workspace_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				},
+				"workspace_members_user_id_users_id_fk": {
+					"name": "workspace_members_user_id_users_id_fk",
+					"tableFrom": "workspace_members",
+					"tableTo": "users",
+					"columnsFrom": ["user_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": false
+		},
+		"public.workspaces": {
+			"name": "workspaces",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true
+				},
+				"owner_user_id": {
+					"name": "owner_user_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"name": {
+					"name": "name",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {
+				"workspaces_owner_user_id_users_id_fk": {
+					"name": "workspaces_owner_user_id_users_id_fk",
+					"tableFrom": "workspaces",
+					"tableTo": "users",
+					"columnsFrom": ["owner_user_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {
+				"workspaces_owner_user_id_unique": {
+					"name": "workspaces_owner_user_id_unique",
+					"nullsNotDistinct": false,
+					"columns": ["owner_user_id"]
+				}
+			},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": false
+		}
+	},
+	"enums": {
+		"public.object_type": {
+			"name": "object_type",
+			"schema": "public",
+			"values": ["recording"]
+		}
+	},
+	"schemas": {},
+	"sequences": {},
+	"roles": {},
+	"policies": {},
+	"views": {},
+	"_meta": {
+		"columns": {},
+		"schemas": {},
+		"tables": {}
+	}
+}

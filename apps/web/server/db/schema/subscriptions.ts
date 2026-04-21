@@ -6,6 +6,7 @@ import { usersTable } from "./users";
 export const subscriptionsTable = pgTable("subscriptions", {
 	id: uuid("id").primaryKey(),
 	stripeSubscriptionId: text("stripe_subscription_id").unique().notNull(),
+	stripeSeatsSubscriptionItemId: text("stripe_seats_subscription_item_id"),
 	userId: uuid("user_id").references(() => usersTable.id, {
 		onDelete: "cascade",
 	}),

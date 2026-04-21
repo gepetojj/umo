@@ -22,6 +22,8 @@ export const createCheckoutSessionAction = authActionClient
 		const customerId = await ensureStripeCustomer(ctx.user);
 		const base = getAppBaseUrl();
 
+		// Gold: só o preço base no Checkout. O price de vagas extras (STRIPE_SEATS_PRICE_ID)
+		// é criado/atualizado/removido em sync após a assinatura (syncStripeSeatQuantityForWorkspaceOwner).
 		const session = await stripe.checkout.sessions.create({
 			customer: customerId,
 			mode: "subscription",

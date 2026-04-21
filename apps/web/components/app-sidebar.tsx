@@ -8,6 +8,7 @@ import {
 	LogOut,
 	MessageSquarePlusIcon,
 	MicIcon,
+	Users,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -36,6 +37,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMeetings } from "@/hooks/use-meetings";
+import { useWorkspaceBrief } from "@/hooks/use-workspace-brief";
 
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 
@@ -58,6 +60,7 @@ export function AppSidebar() {
 	const pathname = usePathname();
 	const { setOpenMobile, isMobile } = useSidebar();
 	const { meetings: list, loading } = useMeetings();
+	const { data: workspaceBrief } = useWorkspaceBrief();
 	const { user } = useUser();
 	const { signOut } = useAuth();
 
@@ -77,6 +80,23 @@ export function AppSidebar() {
 							</Link>
 						</SidebarMenuButton>
 					</SidebarMenuItem>
+					{workspaceBrief?.inWorkspace ? (
+						<SidebarMenuItem>
+							<SidebarMenuButton
+								asChild
+								isActive={pathname.startsWith("/workspace")}
+							>
+								<Link
+									href="/workspace"
+									onClick={() => setOpenMobile(false)}
+									className="min-h-[44px]"
+								>
+									<Users className="size-5" />
+									<span>Workspace</span>
+								</Link>
+							</SidebarMenuButton>
+						</SidebarMenuItem>
+					) : null}
 				</SidebarMenu>
 			</SidebarHeader>
 			<SidebarContent>
@@ -203,6 +223,19 @@ export function AppSidebar() {
 											Minha assinatura
 										</Link>
 									</DropdownMenuItem>
+									{workspaceBrief?.inWorkspace ? (
+										<DropdownMenuItem asChild>
+											<Link
+												href="/workspace"
+												onClick={() =>
+													setOpenMobile(false)
+												}
+											>
+												<Users />
+												Gerenciar workspace
+											</Link>
+										</DropdownMenuItem>
+									) : null}
 								</DropdownMenuGroup>
 								<DropdownMenuSeparator />
 								<DropdownMenuItem onClick={() => signOut()}>

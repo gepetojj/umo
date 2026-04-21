@@ -1,7 +1,14 @@
 "use server";
 
+import type Stripe from "stripe";
+
+import {
+	findMainPlanSubscriptionItem,
+	findSeatsSubscriptionItem,
+} from "@/lib/billing/stripe-subscription-items";
 import { getPriceIdForPlan } from "@/lib/plans";
 import { getActiveSubscription } from "@/lib/subscriptions/get-active-subscription";
+import { syncSubscriptionFromStripe } from "@/lib/subscriptions/sync-subscription-from-stripe";
 import { AuthError, authActionClient } from "@/server/actions/safe-action";
 import { stripe } from "@/server/stripe";
 
@@ -23,23 +30,38 @@ export const changeSubscriptionPlanAction = authActionClient
 
 		const stripeSub = await stripe.subscriptions.retrieve(
 			active.stripeSubscriptionId,
+			{ expand: ["items.data.price"] },
 		);
-		const itemId = stripeSub.items.data[0]?.id;
-		if (!itemId) {
+
+		const mainItem = findMainPlanSubscriptionItem(stripeSub);
+		if (!mainItem) {
 			throw new Error(
-				"Não foi possível concluir a troca agora. Tente de novo em instantes.",
+				"Não foi possível localizar o item de plano na assinatura. Contate o suporte.",
 			);
 		}
 
+		const seatsItem = findSeatsSubscriptionItem(stripeSub);
+		const newPriceId = getPriceIdForPlan(parsedInput.planId);
+
+		const items: Stripe.SubscriptionUpdateParams.Item[] = [
+			{ id: mainItem.id, price: newPriceId },
+		];
+
+		// Starter não cobra vagas: remove o add-on para não continuar faturando extras.
+		if (parsedInput.planId === "starter" && seatsItem) {
+			items.push({ id: seatsItem.id, deleted: true });
+		}
+
 		await stripe.subscriptions.update(active.stripeSubscriptionId, {
-			items: [
-				{
-					id: itemId,
-					price: getPriceIdForPlan(parsedInput.planId),
-				},
-			],
+			items,
 			proration_behavior: "create_prorations",
 		});
+
+		const updated = await stripe.subscriptions.retrieve(
+			active.stripeSubscriptionId,
+			{ expand: ["items.data.price"] },
+		);
+		await syncSubscriptionFromStripe(updated);
 
 		return { ok: true as const };
 	});

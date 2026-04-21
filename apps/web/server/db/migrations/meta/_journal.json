@@ -64,6 +64,13 @@
 			"when": 1776789527502,
 			"tag": "0008_nappy_silver_sable",
 			"breakpoints": true
+		},
+		{
+			"idx": 9,
+			"version": "7",
+			"when": 1776795421450,
+			"tag": "0009_salty_thanos",
+			"breakpoints": true
 		}
 	]
 }

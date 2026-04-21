@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useMeetings } from "@/hooks/use-meetings";
 import { useRecorder } from "@/hooks/use-recorder";
+import { useWorkspaceBrief } from "@/hooks/use-workspace-brief";
 import { clearChunksForMeeting } from "@/lib/indexed-db";
 import { unwrapSafeActionResult } from "@/lib/unwrap-safe-action-result";
 import { updateMeetingDurationAction } from "@/server/actions/meetings/update-meeting-duration.action";
@@ -25,19 +26,30 @@ function formatDuration(seconds: number) {
 export default function NewMeetingPage() {
 	const router = useRouter();
 	const { addMeeting } = useMeetings();
+	const { data: workspaceBrief } = useWorkspaceBrief();
 	const { start, stop, isRecording, durationSeconds, error } = useRecorder();
 	const [starting, setStarting] = useState(false);
+	const [privateMeeting, setPrivateMeeting] = useState(false);
 	const [currentMeetingId, setCurrentMeetingId] = useState<string | null>(
 		null,
 	);
 
 	const handleStartRecording = useCallback(async () => {
 		setStarting(true);
-		const meetingId = await addMeeting("Reunião sem título");
+		const visibility =
+			workspaceBrief?.canTogglePrivateMeeting && privateMeeting
+				? "private"
+				: "workspace";
+		const meetingId = await addMeeting("Reunião sem título", visibility);
 		setCurrentMeetingId(meetingId);
 		await start(meetingId);
 		setStarting(false);
-	}, [start, addMeeting]);
+	}, [
+		start,
+		addMeeting,
+		workspaceBrief?.canTogglePrivateMeeting,
+		privateMeeting,
+	]);
 
 	const handleStopRecording = useCallback(async () => {
 		const id = currentMeetingId;
@@ -84,6 +96,19 @@ export default function NewMeetingPage() {
 									{error}
 								</p>
 							)}
+							{workspaceBrief?.canTogglePrivateMeeting ? (
+								<label className="mt-4 flex cursor-pointer items-center justify-center gap-2 text-muted-foreground text-sm">
+									<input
+										type="checkbox"
+										checked={privateMeeting}
+										onChange={(e) =>
+											setPrivateMeeting(e.target.checked)
+										}
+										className="size-4 rounded border-input accent-primary"
+									/>
+									Reunião privada (visível só para mim)
+								</label>
+							) : null}
 							<Button
 								className="mt-4 min-h-[44px]"
 								onClick={handleStartRecording}

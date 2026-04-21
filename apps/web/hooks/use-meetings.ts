@@ -21,9 +21,14 @@ export function useMeetings() {
 		queryFn: async () => unwrapSafeActionResult(await getMeetingsAction()),
 	});
 
-	const addMeeting = async (title: string) => {
+	const addMeeting = async (
+		title: string,
+		visibility?: "workspace" | "private",
+	) => {
 		const { id } = unwrapSafeActionResult(
-			await createMeetingAction({ title }),
+			await createMeetingAction(
+				visibility ? { title, visibility } : { title },
+			),
 		);
 		await queryClient.invalidateQueries({ queryKey: meetingsQueryKey });
 		return id;
