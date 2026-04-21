@@ -33,6 +33,7 @@ import { meetingsQueryKey } from "@/lib/use-meetings";
 import { getMeeting } from "@/server/actions/meetings/get-meeting";
 import { getMeetingMessages } from "@/server/actions/meetings/get-meeting-messages";
 import { processTranscriptions } from "@/server/actions/transcriptions/process-transcriptions";
+import { getWorkflowRunStatus } from "@/server/actions/workflows/get-workflow-run-status";
 
 const MEETING_SUGGESTIONS = [
 	"Quais foram os principais pontos discutidos?",
@@ -55,6 +56,9 @@ export default function MeetingChatPage() {
 	const [transcriptionError, setTranscriptionError] = useState<string | null>(
 		null,
 	);
+	const [transcriptionRunId, setTranscriptionRunId] = useState<string | null>(
+		null,
+	);
 	const transcriptionTriggeredRef = useRef(false);
 	const sidebarInvalidatedRef = useRef(false);
 	const queryClient = useQueryClient();
@@ -64,6 +68,10 @@ export default function MeetingChatPage() {
 		const m = await getMeeting(id);
 		setMeeting(m ?? null);
 	}, [id]);
+
+	const meetingTranscriptionId = meeting?.transcriptionId;
+	const meetingTranscriptionPending = meeting?.transcriptionPending;
+	const meetingTotalChunks = meeting?.totalChunks;
 
 	// Carrega reunião + mensagens em paralelo
 	useEffect(() => {
@@ -86,33 +94,101 @@ export default function MeetingChatPage() {
 		};
 	}, [id]);
 
+	useEffect(() => {
+		void id;
+		transcriptionTriggeredRef.current = false;
+		setTranscriptionRunId(null);
+		setTranscriptionQueued(false);
+		setTranscriptionError(null);
+	}, [id]);
+
 	// Dispara transcrição para gravações chunk-based
 	useEffect(() => {
+		if (transcriptionError) return;
 		if (
 			!id ||
-			!meeting ||
-			meeting.transcriptionId ||
-			!meeting.transcriptionPending ||
-			!meeting.totalChunks ||
+			meetingTranscriptionId ||
+			!meetingTranscriptionPending ||
+			!meetingTotalChunks ||
 			transcriptionTriggeredRef.current
 		)
 			return;
+		let cancelled = false;
 		transcriptionTriggeredRef.current = true;
 		setTranscriptionError(null);
 		setTranscriptionQueued(true);
 		processTranscriptions({ meetingId: id })
-			.then(() => {
-				refetchMeeting();
+			.then((res) => {
+				if (cancelled) return;
+				setTranscriptionRunId(res.runId);
+				return refetchMeeting();
 			})
 			.catch((e) => {
+				if (cancelled) return;
+				transcriptionTriggeredRef.current = false;
 				setTranscriptionQueued(false);
 				setTranscriptionError(
 					e instanceof Error
 						? e.message
-						: "Falha ao processar transcrições",
+						: "Falha ao enfileirar a transcrição",
 				);
 			});
-	}, [id, meeting, refetchMeeting]);
+		return () => {
+			cancelled = true;
+		};
+	}, [
+		id,
+		meetingTranscriptionId,
+		meetingTranscriptionPending,
+		meetingTotalChunks,
+		refetchMeeting,
+		transcriptionError,
+	]);
+
+	useEffect(() => {
+		if (meeting?.transcriptionId) {
+			setTranscriptionQueued(false);
+			setTranscriptionRunId(null);
+		}
+	}, [meeting?.transcriptionId]);
+
+	useEffect(() => {
+		if (!transcriptionRunId) return;
+		let cancelled = false;
+
+		const tick = async () => {
+			try {
+				const { status } =
+					await getWorkflowRunStatus(transcriptionRunId);
+				if (cancelled) return;
+				const s = String(status).toLowerCase();
+				if (s === "failed" || s === "cancelled" || s === "terminated") {
+					setTranscriptionError(
+						s === "cancelled"
+							? "Transcrição cancelada."
+							: "A transcrição falhou após novas tentativas. Tente de novo.",
+					);
+					setTranscriptionQueued(false);
+					setTranscriptionRunId(null);
+					transcriptionTriggeredRef.current = false;
+					return;
+				}
+				if (s === "completed") {
+					setTranscriptionRunId(null);
+					await refetchMeeting();
+				}
+			} catch {
+				// leitura de status pode falhar transientemente
+			}
+		};
+
+		void tick();
+		const interval = setInterval(tick, 5000);
+		return () => {
+			cancelled = true;
+			clearInterval(interval);
+		};
+	}, [transcriptionRunId, refetchMeeting]);
 
 	// Polling: atualiza meeting quando transcrição estiver pronta
 	useEffect(() => {
@@ -290,13 +366,17 @@ export default function MeetingChatPage() {
 							setTranscriptionQueued(true);
 							transcriptionTriggeredRef.current = true;
 							processTranscriptions({ meetingId: id })
-								.then(() => refetchMeeting())
+								.then((res) => {
+									setTranscriptionRunId(res.runId);
+									return refetchMeeting();
+								})
 								.catch((e) => {
+									transcriptionTriggeredRef.current = false;
 									setTranscriptionQueued(false);
 									setTranscriptionError(
 										e instanceof Error
 											? e.message
-											: "Falha ao processar transcrições",
+											: "Falha ao enfileirar a transcrição",
 									);
 								});
 						}}

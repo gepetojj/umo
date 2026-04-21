@@ -40,7 +40,16 @@ export default function NewMeetingPage() {
 
 	const handleStopRecording = useCallback(async () => {
 		const id = currentMeetingId;
-		const { duration, totalChunks } = await stop();
+		let duration = 0;
+		let totalChunks = 0;
+		try {
+			const stopped = await stop();
+			duration = stopped.duration;
+			totalChunks = stopped.totalChunks;
+		} catch {
+			setCurrentMeetingId(null);
+			return;
+		}
 		setCurrentMeetingId(null);
 		if (!id) return;
 

@@ -1,18 +1,20 @@
 "use server";
 
+import { start } from "workflow/api";
 import { z } from "zod";
 
-import { processAllTranscriptions } from "@/server/transcriptions/transcribe-chunk";
+import { meetingTranscriptionWorkflow } from "@/workflows/meeting-transcription";
 
 const schema = z.object({
 	meetingId: z.string(),
 });
 
 /**
- * Server action to process all pending chunk transcriptions for a meeting.
- * Downloads audio from S3, transcribes in parallel, merges results, and generates title.
+ * Enqueues durable transcription for a meeting (download chunks, Whisper, title, summary).
+ * Returns immediately with a workflow run id for observability / status polling.
  */
 export const processTranscriptions = async (data: z.infer<typeof schema>) => {
 	const { meetingId } = schema.parse(data);
-	await processAllTranscriptions(meetingId);
+	const run = await start(meetingTranscriptionWorkflow, [meetingId]);
+	return { runId: run.runId };
 };

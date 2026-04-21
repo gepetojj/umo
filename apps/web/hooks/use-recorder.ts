@@ -81,9 +81,7 @@ export function useRecorder() {
 						formData.set("chunkIndex", String(index));
 						formData.set("chunk", e.data);
 						await uploadChunk(formData);
-					})().catch((err) => {
-						console.error(`Failed to upload chunk ${index}:`, err);
-					});
+					})();
 
 					pendingUploadsRef.current.push(promise);
 				}
@@ -135,8 +133,18 @@ export function useRecorder() {
 		});
 
 		// Wait for all parallel uploads (including the final chunk) to complete
-		await Promise.all(pendingUploadsRef.current);
-		pendingUploadsRef.current = [];
+		try {
+			await Promise.all(pendingUploadsRef.current);
+		} catch (err) {
+			const message =
+				err instanceof Error
+					? err.message
+					: "Falha ao enviar um ou mais trechos de áudio.";
+			setError(message);
+			throw err;
+		} finally {
+			pendingUploadsRef.current = [];
+		}
 
 		const totalChunks = chunkIndexRef.current;
 

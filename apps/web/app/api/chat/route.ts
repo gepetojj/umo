@@ -9,7 +9,7 @@ import { db } from "@/server/db";
 import { meetingMessagesTable } from "@/server/db/schema/meeting-messages";
 
 const bodySchema = z.object({
-	meetingId: z.string().uuid(),
+	meetingId: z.uuid(),
 	messages: z.array(
 		z.object({
 			id: z.string(),

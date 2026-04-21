@@ -1,16 +1,9 @@
 "use server";
 
-import { randomUUID } from "node:crypto";
-
-import { PutObjectCommand } from "@aws-sdk/client-s3";
-import { eq } from "drizzle-orm";
+import { start } from "workflow/api";
 import { z } from "zod";
 
-import { db } from "@/server/db";
-import { meetingsTable } from "@/server/db/schema/meetings";
-import { objectsTable } from "@/server/db/schema/objects";
-import { env } from "@/server/env";
-import { s3 } from "@/server/s3";
+import { persistAudioChunkWorkflow } from "@/workflows/persist-audio-chunk";
 
 const schema = z.object({
 	meetingId: z.string(),
@@ -18,9 +11,9 @@ const schema = z.object({
 });
 
 /**
- * Uploads an audio chunk to S3 and saves metadata to the database.
- * Transcription is NOT done here — it happens later via processTranscriptions
- * after all chunks are uploaded and recording is finalized.
+ * Uploads an audio chunk via a durable workflow (S3 + DB in a retryable step).
+ * Awaits workflow completion so callers (e.g. recorder stop) only resolve after the chunk is persisted.
+ * Transcription runs separately via the processTranscriptions server action.
  */
 export const uploadChunk = async (formData: FormData) => {
 	const raw = {
@@ -34,37 +27,15 @@ export const uploadChunk = async (formData: FormData) => {
 		throw new Error("Missing or invalid chunk");
 	}
 	const buffer = Buffer.from(await chunk.arrayBuffer());
-	const sizeBytes = buffer.length;
 	const contentType = chunk.type || "audio/webm";
 
-	const [meeting] = await db
-		.select({ id: meetingsTable.id })
-		.from(meetingsTable)
-		.where(eq(meetingsTable.id, meetingId))
-		.limit(1);
-	if (!meeting) {
-		throw new Error("Meeting not found");
-	}
+	const audio = new Uint8Array(buffer).buffer;
 
-	const key = `meetings/${meetingId}/chunks/${chunkIndex}`;
+	const run = await start(persistAudioChunkWorkflow, [
+		{ meetingId, chunkIndex, contentType, audio },
+	]);
 
-	await s3.send(
-		new PutObjectCommand({
-			Bucket: env.S3_BUCKET,
-			Key: key,
-			Body: buffer,
-			ContentType: contentType,
-		}),
-	);
-
-	await db.insert(objectsTable).values({
-		id: randomUUID(),
-		meetingId,
-		key,
-		sizeBytes,
-		contentType,
-		chunkIndex,
-	});
+	await run.returnValue;
 
 	return { ok: true };
 };
